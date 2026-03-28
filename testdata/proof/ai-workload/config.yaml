@@ -1,0 +1,13 @@
+llm:
+  log_prompts: true
+  store_responses: true
+
+agent:
+  tool approval_mode: auto
+
+vector_db:
+  listen: 0.0.0.0:6333
+  bind: 0.0.0.0:6334
+
+storage:
+  embeddings_path: /data/vectors 0o777

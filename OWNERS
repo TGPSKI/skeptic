@@ -1,0 +1,9 @@
+# skeptic project owners
+#
+# This file lists the maintainers responsible for reviewing and approving
+# changes to this repository.
+
+maintainers:
+  - name: Tyler Pate
+    github: TGPSKI
+    role: creator, lead maintainer

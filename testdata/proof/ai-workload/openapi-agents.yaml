@@ -1,0 +1,25 @@
+openapi: "3.0.0"
+info:
+  title: Agent Orchestration API
+  version: "1.0"
+paths:
+  /agent/invoke:
+    post:
+      summary: Invoke an AI agent model with a prompt
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+
+components:
+  schemas:
+    VectorConfig:
+      type: object
+      description: qdrant vector store configuration
+      properties:
+        authentication: false
+        api_key: none

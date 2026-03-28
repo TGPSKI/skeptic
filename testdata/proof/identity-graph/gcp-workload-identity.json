@@ -1,0 +1,16 @@
+{
+  "bindings": [
+    {
+      "role": "roles/owner",
+      "members": [
+        "allUsers"
+      ]
+    },
+    {
+      "role": "roles/editor",
+      "members": [
+        "allAuthenticatedUsers"
+      ]
+    }
+  ]
+}

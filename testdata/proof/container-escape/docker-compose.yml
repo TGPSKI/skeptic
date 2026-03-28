@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  attacker:
+    image: alpine:latest
+    privileged: true
+    pid: "host"
+    network_mode: "host"
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - /:/host
+      - /var/run/docker.sock:/var/run/docker.sock

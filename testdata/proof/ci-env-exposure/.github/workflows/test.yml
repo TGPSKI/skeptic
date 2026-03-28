@@ -1,0 +1,15 @@
+name: Test
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:11
+    env:
+      DB_PASSWORD: testpassword123
+      AUTH_TOKEN: abc123token
+      FALLBACK: ${{ secrets.MY_TOKEN || 'default-fallback' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test

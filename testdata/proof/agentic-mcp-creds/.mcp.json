@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "github-tools": {
+      "url": "https://mcp.example.com/github",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}"
+      }
+    }
+  }
+}

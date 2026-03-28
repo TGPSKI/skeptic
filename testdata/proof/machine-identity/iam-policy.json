@@ -1,0 +1,17 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "iam:*",
+      "Resource": "*",
+      "Principal": {"Federated": "token.actions.githubusercontent.com"},
+      "Condition": {
+        "StringLike": {
+          "sub": "*"
+        }
+      }
+    }
+  ],
+  "client_secret": "FAKE_CLIENT_SECRET_FOR_PROOF_CORPUS"
+}

@@ -1,0 +1,9 @@
+{
+  "Type": "AWS::IAM::OIDCProvider",
+  "Properties": {
+    "Url": "https://token.actions.githubusercontent.com",
+    "ClientIdList": ["sts.amazonaws.com"],
+    "federation": true,
+    "identity_provider": "github-actions"
+  }
+}

@@ -1,0 +1,14 @@
+replicaCount: 3
+
+image:
+  repository: myregistry.example.com/app
+  tag: "latest"
+
+secrets:
+  databasePassword: "helm-secrets enc://vault/db-password"
+  apiKey: "ENC[AES256_GCM,data:abc123...]"
+
+config:
+  helmSecrets:
+    enabled: true
+    provider: "sops-encrypted"

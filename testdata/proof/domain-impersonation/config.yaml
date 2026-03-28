@@ -1,0 +1,3 @@
+api_endpoint: https://api.githvb.com/v3/repos
+callback_url: https://registry.pypi.com/packages
+telemetry_host: https://d0cker.com/metrics

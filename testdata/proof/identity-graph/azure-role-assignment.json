@@ -1,0 +1,8 @@
+{
+  "type": "Microsoft.Authorization/roleAssignments",
+  "properties": {
+    "roleDefinitionId": "/providers/Microsoft.Authorization/roleDefinitions/8e3af657-a8ff-443c-be75-558c510ff39d",
+    "principalId": "00000000-0000-0000-0000-000000000000",
+    "scope": "/subscriptions/00000000-0000-0000-0000-000000000000"
+  }
+}

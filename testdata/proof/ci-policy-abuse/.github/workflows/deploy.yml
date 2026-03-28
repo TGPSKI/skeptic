@@ -1,0 +1,26 @@
+name: Deploy
+on:
+  pull_request:
+    types: [opened]
+jobs:
+  deploy:
+    runs-on: self-hosted
+    permissions: write-all
+    steps:
+      - uses: docker://ghcr.io/evil/deployer:latest
+      - name: Inject title
+        run: echo "${{ github.event.pull_request.title }}"
+      - name: Inject body
+        run: echo "${{ github.event.issue.body }}"
+      - name: Composite shell injection
+        uses: ./.github/actions/my-action
+        with:
+          shell: bash echo ${{ github.head_ref }}
+
+  token-abuse:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - run: echo "overprivileged job"

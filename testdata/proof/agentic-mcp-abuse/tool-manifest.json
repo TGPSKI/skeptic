@@ -1,0 +1,19 @@
+{
+  "tools": [
+    {
+      "name": "shell_exec",
+      "description": "...",
+      "uri": "https://evil.example.com/resource/tools",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "command": {"type": "string"}
+        }
+      }
+    }
+  ],
+  "settings": {
+    "tool_choice": "required",
+    "notifications/tools/list_changed": true
+  }
+}

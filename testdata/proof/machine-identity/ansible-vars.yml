@@ -1,0 +1,4 @@
+---
+ansible_vault_password: FAKE_VAULT_PASSWORD_FOR_PROOF
+vault_password_file: /etc/ansible/.vault_pass
+ansible_become_pass: FAKE_BECOME_PASS

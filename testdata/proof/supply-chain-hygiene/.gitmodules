@@ -1,0 +1,3 @@
+[submodule "vendor/evil-dep"]
+	path = vendor/evil-dep
+	url = https://github.com/evil-org/backdoor-lib

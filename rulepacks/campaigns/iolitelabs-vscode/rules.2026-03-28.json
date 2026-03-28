@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "name": "iolitelabs-vscode-supply-chain-2026-03-28",
+  "generated_at": "2026-03-29T08:37:47Z",
+  "sources": [
+    "https://www.stepsecurity.io/blog/malicious-iolitelabs-vscode-extensions-target-solidity-developers-on-windows-macos-and-linux-with-backdoor"
+  ],
+  "ecosystems": [
+    "agent-skills",
+    "general",
+    "mcp",
+    "npm"
+  ],
+  "rules": [
+    {
+      "id": "INGEST-INGESTED_I-040",
+      "title": "Legitimate pako@1.0.11 index.js SHA256",
+      "description": "SHA256 hash of the legitimate pako compression library \u2014 presence of this hash in incident response artifacts establishes the known-good baseline for tampering comparison.",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)e7ec4e35d94d01a2e4ee5dca62b8fb08ac7411596edb54b398651f4eb563561d",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-041",
+      "title": "Tampered pako index.js SHA256 (IoliteLabs backdoor)",
+      "description": "SHA256 hash of the pako/index.js file injected with the IoliteLabs multi-stage backdoor dropper. Confirms artifact tampering.",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)fcd398abc51fd16e8bc93ef8d88a23d7dec28081b6dfce4b933020322a610508",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-046",
+      "title": "7WhiteSmoke.msi installer SHA256",
+      "description": "SHA256 hash of the Chrome-impersonating MSI installer delivered via oortt.com. Contains the ntuser DLL keylogger.",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)e903ae267bf7ed1d02b218c1dc7cf6d87257e87de9fbda411a13f9154716bfa3",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-049",
+      "title": "ntuser hook DLL SHA256",
+      "description": "SHA256 hash of the ntuser PE32 DLL extracted from 7WhiteSmoke.msi. Installs desktop-level input hooks via regsvr32 LOLbin execution.",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)5f9c09c2c432a6b94f2200455065bcfd1237f8a01b913a7c9e37f164ff99a84c",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-054",
+      "title": "VSIX solidity-macos SHA256",
+      "description": "SHA256 hash of the malicious iolitelabs.solidity-macos VSIX package (v0.1.8).",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)e0f206aac2c3fa733b0c466d2ebb86ba038cf1fe2edeee21e94a4d943a27f63b",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-055",
+      "title": "calc.bat Windows dropper SHA256",
+      "description": "SHA256 hash of the Windows batch dropper using environment variable string concatenation to reconstruct C2 URLs at runtime.",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)40a6bbc8260bc17faa583dd3c3954a0e3c4b0abb923baaecd2ad7901311d5d82",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-056",
+      "title": "doc.sh macOS dropper SHA256",
+      "description": "SHA256 hash of the macOS shell dropper that installs a LaunchAgent, bypasses Gatekeeper, and deploys architecture-specific binaries.",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)5886a9b659c05fb3e3077c80bb6a8be6acb1064683db542fae90e3bf9757f95f",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-057",
+      "title": "doc macOS x86_64 binary SHA256",
+      "description": "SHA256 hash of the Intel Mac stage-2 exfiltration binary (57.8 MB pkg-packaged Node.js executable).",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)38cb0e1209a721a565e71f9dc0593437723dc32c4d2fe2d23de141f4d306ccea",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-058",
+      "title": "doc1 macOS arm64 binary SHA256",
+      "description": "SHA256 hash of the Apple Silicon stage-2 exfiltration binary (7.9 MB pkg-packaged Node.js executable).",
+      "category": "ingested-ioc",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)8e7213940a2f590af145226d22a96d416bcca4bc6cba3400a8a96fd3e7018080",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-032",
+      "title": "IoliteLabs VSCode extension publisher ID",
+      "description": "Matches the iolitelabs.solidity publisher/extension namespace used in the compromised VSCode Marketplace extensions.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "iolitelabs\\.solidity",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-044",
+      "title": "rraghh.com C2 domain",
+      "description": "Primary C2 domain serving the Windows stage-1 dropper (calc.bat). Active since March 25, 2026.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "rraghh\\.com",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-045",
+      "title": "oortt.com C2 domain",
+      "description": "Secondary C2 domain serving the Windows stage-2 MSI (7WhiteSmoke.msi). Separate infrastructure from rraghh.com.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "oortt\\.com",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-047",
+      "title": "WhiteSmoke MSI payload filename",
+      "description": "Filename of the Chrome-impersonating Windows installer. Appears as WhiteSmoke.msi or 7WhiteSmoke.msi in file system artifacts.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "whitesmoke\\.msi",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-048",
+      "title": "7WhiteSmoke MSI payload filename",
+      "description": "Full filename of the Chrome-impersonating MSI downloaded to %USERPROFILE%/Documents/.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "7whitesmoke\\.msi",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-050",
+      "title": "macOS Gatekeeper quarantine attribute",
+      "description": "The com.apple.quarantine extended attribute stripped by xattr -d in the IoliteLabs dropper to bypass Gatekeeper protection.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "com\\.apple\\.quarantine",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-059",
+      "title": "cdn.rraghh.com C2 subdomain",
+      "description": "CDN subdomain serving macOS stage-1 dropper (doc.sh) and stage-2 binaries (doc, doc1).",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "cdn\\.rraghh\\.com",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-060",
+      "title": "Spoofed Apple LaunchAgent plist",
+      "description": "The com.apple.system.updater.plist persistence artifact installed at ~/Library/LaunchAgents/ to mimic a legitimate Apple system service.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "com\\.apple\\.system\\.updater\\.plist",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-062",
+      "title": "regsvr32 LOLbin execution",
+      "description": "The regsvr32.exe binary used with /s /i flags for Living-off-the-Land DLL execution of the ntuser hook DLL.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "regsvr32\\.exe",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-064",
+      "title": "TeamPCP tpcp.tar.gz exfiltration signature",
+      "description": "The tpcp.tar.gz archive filename associated with TeamPCP exfiltration across multiple supply chain attacks (litellm, telnyx, iolitelabs).",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "tpcp\\.tar\\.gz",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-038",
+      "title": "rraghh.com/gt/calc.bat full C2 URL",
+      "description": "Full URL of the Windows batch dropper served from the primary C2 domain.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "(?i)https://rraghh\\.com/gt/calc\\.bat",
+      "target": "content"
+    },
+    {
+      "id": "INGEST-INGESTED_I-039",
+      "title": "cdn.rraghh.com/gt/doc.sh full C2 URL",
+      "description": "Full URL of the macOS shell dropper served from the CDN C2 subdomain.",
+      "category": "ingested-ioc",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "(?i)https://cdn\\.rraghh\\.com/gt/doc\\.sh",
+      "target": "content"
+    }
+  ],
+  "description": "Campaign-specific IOCs for the IoliteLabs VSCode extension supply chain attack (solidity-macos/windows/linux v0.1.8, March 2026). Covers SHA256 hashes of tampered artifacts, C2 domains (rraghh.com, cdn.rraghh.com, oortt.com), persistence artifacts, and payload filenames."
+}

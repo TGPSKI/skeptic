@@ -1,0 +1,49 @@
+# Build artifacts
+bin/
+*.exe
+*.test
+/skeptic
+
+# Test and benchmark output
+coverage.out
+bench-results.txt
+bench-baseline.txt
+*.sarif
+
+# Scanner state and config
+.skeptic/
+.skeptic-state.json
+.skeptic-waivers.json
+.skeptic.json
+baseline.json
+
+# Corpus artifacts
+.corpus-key
+corpus.lock
+
+# Output
+results/
+private/
+sessions/
+
+# Profiling output
+cpu.prof
+mem.prof
+trace.out
+
+# OS and editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Backup files (testdata/proof/*.bak are intentional test fixtures)
+cmd/**/*.bak
+
+# Signing
+*.key.pem
+
+# Cursor
+
+.cursor/

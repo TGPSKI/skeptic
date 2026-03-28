@@ -1,0 +1,6 @@
+{
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "go.lintTool": "golangci-lint",
+  "python.linting.enabled": true
+}

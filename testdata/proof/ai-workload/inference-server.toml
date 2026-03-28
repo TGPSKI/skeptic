@@ -1,0 +1,9 @@
+[model_server]
+name = "llama-serve"
+port = 8080
+serving = true
+workers = 4
+
+[logging]
+prompt_logging = true
+save_conversation = true

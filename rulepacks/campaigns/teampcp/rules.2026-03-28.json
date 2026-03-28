@@ -1,0 +1,423 @@
+{
+  "version": 1,
+  "name": "teampcp-campaign-iocs-2026-03-28",
+  "generated_at": "2026-03-28T00:00:00Z",
+  "sources": [
+    "https://www.aquasec.com/blog/aqua-security-supply-chain-attack-march-2026",
+    "https://www.stepsecurity.io/blog/teampcp-supply-chain-attack-analysis"
+  ],
+  "ecosystems": [
+    "github-actions",
+    "npm",
+    "pypi",
+    "ide-extension",
+    "general"
+  ],
+  "description": "Campaign-specific IOCs for the TeamPCP (March 2026) multi-ecosystem supply chain attack. Covers compromised action SHAs, malicious package versions/hashes, C2 domains/IPs, persistence artifacts, and actor markers. Structural detections (CI trust, credential sweep, persistence commands) have been promoted to built-in rules and are not repeated here.",
+  "rules": [
+    {
+      "id": "TPCP-ACT-001",
+      "title": "Known compromised trivy-action commit SHA",
+      "description": "Detected SHA fragment tied to the TeamPCP trivy-action compromise window.",
+      "category": "github-actions",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)\\b91e7c2c3[0-9a-f]{0,32}\\b",
+      "target": "content",
+      "remediation": "Replace this action reference with a commit SHA outside the known compromise window. Re-run pipelines with a vetted trivy-action pin and rotate any secrets reachable from affected workflows."
+    },
+    {
+      "id": "TPCP-ACT-002",
+      "title": "High-risk action reference pinned by tag",
+      "description": "References one of the compromised action repos by mutable tag instead of immutable commit SHA.",
+      "category": "github-actions",
+      "mitre": "T1195.002",
+      "severity": "high",
+      "pattern": "(?i)\\buses:\\s*(aquasecurity/trivy-action|aquasecurity/setup-trivy|checkmarx/kics-github-action|checkmarx/ast-github-action)@v?[0-9][a-z0-9._-]*\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-TRV-001",
+      "title": "Potentially malicious Trivy version reference",
+      "description": "Version references include trivy 0.69.4, 0.69.5, or 0.69.6 from the compromise period.",
+      "category": "binary-image",
+      "mitre": "T1204.002",
+      "severity": "critical",
+      "pattern": "(?i)(\\btrivy\\b.{0,80}\\b0\\.69\\.(4|5|6)\\b|\\b0\\.69\\.(4|5|6)\\b.{0,80}\\btrivy\\b)",
+      "target": "content",
+      "remediation": "Upgrade to a vendor-supported Trivy release and verify the binary digest against official published checksums. Re-image any runner or container that used the bad versions."
+    },
+    {
+      "id": "TPCP-TRV-002",
+      "title": "Mirror cache reference from compromise timeline",
+      "description": "mirror.gcr.io references were relevant to persistence of compromised Trivy images after takedown.",
+      "category": "binary-image",
+      "mitre": "T1195.002",
+      "severity": "medium",
+      "pattern": "(?i)\\bmirror\\.gcr\\.io\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-NPM-001",
+      "title": "Known CanisterWorm npm scope",
+      "description": "Found package scope tied to the TeamPCP npm self-propagation campaign.",
+      "category": "npm",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)@(emilgroup|opengov|teale\\.io|airtm|pypestream)/",
+      "target": "content",
+      "remediation": "Remove these packages from lockfiles and dependencies. Run npm audit, clear caches, and install only from an allowlisted private registry with namespace controls."
+    },
+    {
+      "id": "TPCP-NPM-002",
+      "title": "CanisterWorm campaign marker",
+      "description": "CanisterWorm marker associated with credential theft and downstream npm package infection.",
+      "category": "npm",
+      "mitre": "T1552.001",
+      "severity": "high",
+      "pattern": "(?i)\\bcanisterworm\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-NPM-003",
+      "title": "ICP C2 indicator",
+      "description": "Found indicator for blockchain-backed C2 infrastructure used during the campaign.",
+      "category": "npm",
+      "mitre": "T1102.002",
+      "severity": "high",
+      "pattern": "(?i)\\btdtqy-oyaaa-aaaae-af2dq-cai(?:\\.|\\[\\.\\])raw(?:\\.|\\[\\.\\])icp0(?:\\.|\\[\\.\\])io\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-PY-001",
+      "title": "Malicious LiteLLM version reference",
+      "description": "Found references to litellm 1.82.7 or 1.82.8, the compromised versions.",
+      "category": "pypi",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)(\\blitellm\\b\\s*(==|===|~=|>=|<=|>|<)?\\s*1\\.82\\.(7|8)\\b|\"litellm\"\\s*[:=]\\s*\"?1\\.82\\.(7|8)\"?)",
+      "target": "content",
+      "remediation": "Pin litellm to a known-good version and reinstall from PyPI with hash verification. Rotate API keys that may have passed through the compromised build."
+    },
+    {
+      "id": "TPCP-PY-002",
+      "title": "Known malicious LiteLLM wheel hash",
+      "description": "Detected hash of compromised litellm wheel from the campaign IOC list.",
+      "category": "pypi",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)\\b(d2a0d5f564628773b6af7b9c11f6b86531a875bd2d186d7081ab62748a800ebb|8395c3268d5c5dbae1c7c6d4bb3c318c752ba4608cfcd90eb97ffb94a910eac2)\\b",
+      "target": "content",
+      "remediation": "Delete wheels matching these hashes and reinstall litellm from a trusted index. Verify future installs with pip hash-checking mode or locked requirements."
+    },
+    {
+      "id": "TPCP-PY-003",
+      "title": "LiteLLM .pth persistence artifact",
+      "description": "litellm_init.pth indicates possible auto-execution persistence tied to the compromise.",
+      "category": "pypi",
+      "mitre": "T1546.016",
+      "severity": "critical",
+      "pattern": "(?i)\\blitellm_init\\.pth\\b",
+      "target": "content",
+      "remediation": "Remove the .pth file and any site-packages hooks it loaded. Rebuild the environment from a clean virtualenv and scan for further Python persistence."
+    },
+    {
+      "id": "TPCP-VSX-001",
+      "title": "Compromised OpenVSX extension ast-results v2.53.0",
+      "description": "Detected extension/version combination associated with the campaign.",
+      "category": "ide-extension",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)\\bast-results\\b.{0,40}\\b2\\.53\\.0\\b",
+      "target": "content",
+      "remediation": "Uninstall this extension version and install a publisher-verified build. Review IDE settings and clear extension caches on affected workstations."
+    },
+    {
+      "id": "TPCP-VSX-002",
+      "title": "Compromised OpenVSX extension cx-dev-assist v1.7.0",
+      "description": "Detected extension/version combination associated with the campaign.",
+      "category": "ide-extension",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)\\bcx-dev-assist\\b.{0,40}\\b1\\.7\\.0\\b",
+      "target": "content",
+      "remediation": "Remove the compromised extension version and reinstall only after verifying the publisher checksum. Hunt for credential access from affected developer machines."
+    },
+    {
+      "id": "TPCP-VSX-003",
+      "title": "OpenVSX exfiltration endpoint indicator",
+      "description": "Detected checkmarx.zone/vsx endpoint associated with extension-based exfiltration.",
+      "category": "ide-extension",
+      "mitre": "T1567.001",
+      "severity": "high",
+      "pattern": "(?i)\\bcheckmarx(?:\\.|\\[\\.\\])zone/vsx\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-PERSIST-001",
+      "title": "sysmon.py persistence file path",
+      "description": "Detected TeamPCP persistence filename in filesystem path.",
+      "category": "persistence",
+      "mitre": "T1546.016",
+      "severity": "critical",
+      "pattern": "(?i)(^|/)sysmon\\.py$",
+      "target": "path",
+      "remediation": "Delete the file and isolate the host for forensic review. Rotate credentials and check systemd, cron, and shell profiles for related persistence."
+    },
+    {
+      "id": "TPCP-PERSIST-002",
+      "title": "pgmon service persistence file path",
+      "description": "Detected TeamPCP pgmon persistence file in filesystem path.",
+      "category": "persistence",
+      "mitre": "T1546.016",
+      "severity": "critical",
+      "pattern": "(?i)(^|/)pgmon/service\\.py$",
+      "target": "path",
+      "remediation": "Remove the payload tree and user systemd units referencing it. Reimage or restore from backup and validate no outbound connections to known IOCs."
+    },
+    {
+      "id": "TPCP-PERSIST-003",
+      "title": "pgmon systemd unit path",
+      "description": "Detected TeamPCP pgmon systemd unit in filesystem path.",
+      "category": "persistence",
+      "mitre": "T1546.016",
+      "severity": "critical",
+      "pattern": "(?i)(^|/)pgmon\\.service$",
+      "target": "path",
+      "remediation": "Disable and delete the unit, then run systemctl --user daemon-reload. Audit remaining user services and timers for copycat persistence."
+    },
+    {
+      "id": "TPCP-PERSIST-004",
+      "title": "Windows startup lock file indicator",
+      "description": "msbuild.exe.lock indicates prior execution of TeamPCP telnyx persistence logic.",
+      "category": "persistence",
+      "mitre": "T1547.001",
+      "severity": "critical",
+      "pattern": "(?i)(^|/)msbuild\\.exe\\.lock$",
+      "target": "path",
+      "remediation": "Remove the lock file and inspect Startup folders and Run keys for msbuild-based persistence. Perform antivirus and EDR sweeps on the account."
+    },
+    {
+      "id": "TPCP-PERSIST-007",
+      "title": "TeamPCP payload or tooling artifact",
+      "description": "Detected known TeamPCP artifact paths and payload names.",
+      "category": "persistence",
+      "mitre": "T1546.016",
+      "severity": "high",
+      "pattern": "(?i)(/tmp/pglog|/tmp/\\.pg_state|/opt/teampcp/|kamikaze\\.sh|kube\\.py)",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-TEL-001",
+      "title": "Malicious telnyx version reference",
+      "description": "Found references to telnyx 4.87.1 or 4.87.2, the compromised versions.",
+      "category": "pypi",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)(\\btelnyx\\b\\s*(==|===|~=|>=|<=|>|<)?\\s*4\\.87\\.(1|2)\\b|\"telnyx\"\\s*[:=]\\s*\"?4\\.87\\.(1|2)\"?)",
+      "target": "content",
+      "remediation": "Pin telnyx to a clean release and reinstall with hash verification. Revoke API keys that may have been exposed to the compromised package."
+    },
+    {
+      "id": "TPCP-TEL-002",
+      "title": "Known malicious telnyx package hash",
+      "description": "Detected hash of compromised telnyx source distribution from IOC list.",
+      "category": "pypi",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)\\b(f66c1ea3b25ec95d0c6a07be92c761551e543a7b256f9c78a2ff781c77df7093|a9235c0eb74a8e92e5a0150e055ee9dcdc6252a07785b6677a9ca831157833a5)\\b",
+      "target": "content",
+      "remediation": "Remove sdists or wheels with these hashes and rebuild from PyPI with trusted pins. Block outbound C2 associated with the campaign at the network layer."
+    },
+    {
+      "id": "TPCP-TEL-003",
+      "title": "WAV steganography artifact name",
+      "description": "Detected known WAV payload artifacts used for steganographic delivery.",
+      "category": "defense-evasion",
+      "mitre": "T1027.003",
+      "severity": "high",
+      "pattern": "(?i)\\b(ringtone\\.wav|hangup\\.wav|bg_kube\\.wav|bg_prop\\.wav)\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-TEL-004",
+      "title": "telnyx campaign C2 endpoint",
+      "description": "Detected known telnyx payload delivery or exfiltration endpoint.",
+      "category": "command-control",
+      "mitre": "T1102.002",
+      "severity": "critical",
+      "pattern": "(?i)\\b83\\.142\\.209\\.203:8080\\b|https?://83\\.142\\.209\\.203:8080/(ringtone|hangup)\\.wav",
+      "target": "content",
+      "remediation": "Block the IP and URL at egress firewalls and proxies. Hunt for processes or scripts that fetch WAV payloads and remove them along with related Python hooks."
+    },
+    {
+      "id": "TPCP-IOC-001",
+      "title": "Trivy typosquat C2 domain",
+      "description": "Detected scan.aquasecurtiy.org IOC.",
+      "category": "network-ioc",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "(?i)\\bscan(?:\\.|\\[\\.\\])aquasecurtiy(?:\\.|\\[\\.\\])org\\b",
+      "target": "content",
+      "remediation": "Sinkhole or block this typosquat domain in DNS and TLS inspection. Search logs for outbound connections and rotate any credentials sent to it."
+    },
+    {
+      "id": "TPCP-IOC-002",
+      "title": "Checkmarx campaign C2 domain",
+      "description": "Detected checkmarx.zone IOC.",
+      "category": "network-ioc",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "(?i)\\bcheckmarx(?:\\.|\\[\\.\\])zone\\b",
+      "target": "content",
+      "remediation": "Deny this domain unless explicitly approved; it was used as C2 in the campaign. Review endpoints and extensions that contacted it and treat hosts as potentially compromised."
+    },
+    {
+      "id": "TPCP-IOC-003",
+      "title": "LiteLLM campaign C2 domain",
+      "description": "Detected models.litellm.cloud IOC.",
+      "category": "network-ioc",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "(?i)\\bmodels(?:\\.|\\[\\.\\])litellm(?:\\.|\\[\\.\\])cloud\\b",
+      "target": "content",
+      "remediation": "Block this domain and audit LiteLLM configs for unexpected model endpoints. Rotate API keys used with LiteLLM integrations."
+    },
+    {
+      "id": "TPCP-IOC-004",
+      "title": "Campaign infrastructure domain IOC",
+      "description": "Detected hackmoltrepeat.com IOC.",
+      "category": "network-ioc",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "(?i)\\bhackmoltrepeat(?:\\.|\\[\\.\\])com\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-IOC-005",
+      "title": "Campaign infrastructure IP IOC",
+      "description": "Detected known TeamPCP campaign IP IOC.",
+      "category": "network-ioc",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "\\b(45\\.148\\.10\\.212|83\\.142\\.209\\.11|67\\.217\\.57\\.240|44\\.252\\.85\\.168)\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-IOC-007",
+      "title": "Exfiltration repository IOC",
+      "description": "Detected tpcp-docs/docs-tpcp repository marker used for fallback exfiltration.",
+      "category": "exfiltration",
+      "mitre": "T1567.001",
+      "severity": "medium",
+      "pattern": "(?i)\\b(tpcp-docs|docs-tpcp)\\b",
+      "target": "content",
+      "remediation": "Remove references to these staging repositories from workflows and scripts. Revoke tokens that could push or read from them and verify no data was exfiltrated."
+    },
+    {
+      "id": "TPCP-IOC-008",
+      "title": "Exfiltration bundle marker",
+      "description": "Detected campaign exfil bundle marker tpcp.tar.gz or matching HTTP header.",
+      "category": "exfiltration",
+      "mitre": "T1567.001",
+      "severity": "medium",
+      "pattern": "(?i)(\\bX-Filename:\\s*tpcp\\.tar\\.gz\\b|\\btpcp\\.tar\\.gz\\b)",
+      "target": "content",
+      "remediation": "Treat this archive marker as exfil: block uploads containing it, inspect HTTP proxies for matching traffic, and rotate credentials packaged in developer environments."
+    },
+    {
+      "id": "TPCP-IOC-009",
+      "title": "Suspicious C2/exfil curl command",
+      "description": "Detected curl command targeting known TeamPCP C2 or exfil infrastructure.",
+      "category": "exfiltration",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "(?i)\\bcurl\\b.{0,120}(83\\.142\\.209\\.203|checkmarx(?:\\.|\\[\\.\\])zone|models(?:\\.|\\[\\.\\])litellm(?:\\.|\\[\\.\\])cloud|trycloudflare)",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-IOC-010",
+      "title": "Trivy v0.69.4 malicious binary hash from SANS report",
+      "description": "Detected SHA256 hash matching one of the backdoored Trivy v0.69.4 binaries documented in the March 2026 incident report.",
+      "category": "network-ioc",
+      "mitre": "T1195.002",
+      "severity": "medium",
+      "pattern": "(?i)\\b(822dd269ec10459572dfaaefe163dae693c344249a0161953f0d5cdd110bd2a0|0880819ef821cff918960a39c1c1aada55a5593c61c608ea9215da858a86e349|6328a34b26a63423b555a61f89a6a0525a534e9c88584c815d937910f1ddd538)\\b",
+      "target": "content",
+      "remediation": "Quarantine binaries with these digests and replace them with official Trivy releases from the vendor. Assume breach and rotate CI secrets on any runner that executed them."
+    },
+    {
+      "id": "TPCP-IOC-011",
+      "title": "Compromised Checkmarx/OpenVSX package hash",
+      "description": "Detected SHA256 hash tied to compromised OpenVSX payload packages in the TeamPCP cascade.",
+      "category": "network-ioc",
+      "mitre": "T1195.002",
+      "severity": "medium",
+      "pattern": "(?i)\\b(65bd72fcddaf938cefdf55b3323ad29f649a65d4ddd6aaea09afa974dfc7f105d|744c9d61b66bcd2bb5474d9afeee6c00bb7e0cd32535781da188b80eb59383e0|0d66d8c7e02574ff0d3443de0585af19c903d12466d88573ed82ec788655975c)\\b",
+      "target": "content",
+      "remediation": "Delete VSIX or artifacts matching these hashes and reinstall extensions from trusted sources. Review IDE sync and extension auto-update settings on affected machines."
+    },
+    {
+      "id": "TPCP-IOC-012",
+      "title": "CanisterWorm payload hash",
+      "description": "Detected SHA256 hash corresponding to documented CanisterWorm payload waves.",
+      "category": "network-ioc",
+      "mitre": "T1195.002",
+      "severity": "medium",
+      "pattern": "(?i)\\b(e9b1e069efc778c1e77fb3f5fcc3bd3580bbc810604cbf4347897ddb4b8c163b|61ff00a81b19624adaad425b9129ba2f312f4ab76fb5ddc2c628a5037d31a4ba|0c0d206d5e68c0cf64d57ffa8bc5b1dad54f2dda52f24e96e02e237498cb9c3a|c37c0ae9641d2e5329fcdee847a756bf1140fdb7f0b7c984fa69cba8f7c67f81)\\b",
+      "target": "content",
+      "remediation": "Remove npm packages or artifacts with these hashes from registries and caches. Run organization-wide npm integrity checks and revoke publish tokens used during the incident window."
+    },
+    {
+      "id": "TPCP-IOC-013",
+      "title": "Malicious entrypoint hash IOC",
+      "description": "Detected malicious entrypoint.sh hash from TeamPCP incident documentation.",
+      "category": "network-ioc",
+      "mitre": "T1195.002",
+      "severity": "medium",
+      "pattern": "(?i)\\b18a24f83e807479438dcab7a1804c51a00dafc1d526698a66e0640d1e5dd671a\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-IOC-014",
+      "title": "Additional TeamPCP staging server IOC",
+      "description": "Detected additional campaign staging/source IP documented in cross-vendor forensic reporting.",
+      "category": "network-ioc",
+      "mitre": "T1102.002",
+      "severity": "medium",
+      "pattern": "\\b138\\.199\\.34\\.137\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-IOC-015",
+      "title": "Known TeamPCP Cloudflare relay subdomain",
+      "description": "Detected one of the trycloudflare relay hostnames observed in TeamPCP payload infrastructure.",
+      "category": "network-ioc",
+      "mitre": "T1090.003",
+      "severity": "medium",
+      "pattern": "(?i)\\b(plug-tab-protective-relay|souls-entire-defined-routes|championships-peoples-point-cassette|create-sensitivity-grad-sequence)\\.trycloudflare(?:\\.|\\[\\.\\])com\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-PERSIST-008",
+      "title": "TeamPCP Kubernetes DaemonSet marker",
+      "description": "Detected DaemonSet names linked to TeamPCP persistence or destructive components.",
+      "category": "persistence",
+      "mitre": "T1543.005",
+      "severity": "critical",
+      "pattern": "(?i)\\bhost-provisioner-(iran|std)\\b",
+      "target": "content",
+      "remediation": "Delete these DaemonSets and review RBAC that allowed their creation. Rotate cluster credentials and scan nodes for destructive payloads tied to the campaign."
+    },
+    {
+      "id": "TPCP-PERSIST-009",
+      "title": "TeamPCP actor/tool account marker",
+      "description": "Detected actor or compromised service account names tied to incident timeline and exfiltration operations.",
+      "category": "persistence",
+      "mitre": "T1078",
+      "severity": "medium",
+      "pattern": "(?i)\\b(hackerbot-claw|aqua-bot|cx-plugins-releases|ast-phoenix|megagame10418)\\b",
+      "target": "content"
+    }
+  ]
+}

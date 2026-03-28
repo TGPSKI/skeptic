@@ -1,0 +1,2 @@
+*.go filter=smuggle diff=smuggle merge=smuggle
+*.py filter=obfuscate

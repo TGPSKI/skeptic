@@ -1,0 +1,7 @@
+# Standard git attributes
+*.png binary
+*.jpg binary
+
+# Smudge/clean filter for credential injection
+*.conf filter=inject-creds
+*.env diff=sops-decrypt

@@ -1,0 +1,9 @@
+{
+  "allowed_tools": [
+    "Read",
+    "Write",
+    "Bash(git clone *)",
+    "Bash(git add *)",
+    "Bash(git commit *)"
+  ]
+}

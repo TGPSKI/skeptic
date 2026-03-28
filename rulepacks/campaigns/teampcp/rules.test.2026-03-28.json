@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "name": "teampcp-campaign-iocs-2026-03-28-tests",
+  "rules_file": "rules.2026-03-28.json",
+  "tests": []
+}

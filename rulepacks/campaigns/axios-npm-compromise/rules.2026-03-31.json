@@ -1,0 +1,236 @@
+{
+  "version": 1,
+  "name": "axios-npm-compromise-2026-03-31",
+  "generated_at": "2026-04-01T08:45:00Z",
+  "sources": [
+    "https://www.stepsecurity.io/blog/axios-compromised-on-npm-malicious-versions-drop-remote-access-trojan",
+    "/home/tpate/company/git/service/trivy-incident-response/2026-crappie-ir-summary.html"
+  ],
+  "ecosystems": [
+    "npm",
+    "general"
+  ],
+  "description": "Campaign-specific IOCs for the axios npm account hijack (March 30-31 2026). Compromised maintainer published axios@1.14.1 and axios@0.30.4 with phantom dependency plain-crypto-js@4.2.1 whose postinstall drops a cross-platform RAT via sfrclak.com C2. Consolidated from the initial 2026-03-30 StepSecurity analysis and the 2026-CRAPPIE IR session. Behavioral patterns (DROP-001 through DROP-004) were promoted to the built-in library and are not repeated here.",
+  "rules": [
+    {
+      "id": "AXIOS-C2-001",
+      "title": "axios campaign C2 domain (sfrclak.com)",
+      "description": "C2 domain used by the axios npm compromise RAT dropper. All three platform payloads call back to sfrclak.com:8000.",
+      "category": "network-ioc",
+      "mitre": "T1071.001",
+      "severity": "critical",
+      "pattern": "sfrclak\\.com",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-C2-002",
+      "title": "axios campaign C2 IP (142.11.206.73)",
+      "description": "IP address resolving to sfrclak.com, the C2 server for the axios npm compromise.",
+      "category": "network-ioc",
+      "mitre": "T1071.001",
+      "severity": "critical",
+      "pattern": "142\\.11\\.206\\.73",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-C2-003",
+      "title": "axios campaign C2 URL path segment (/6202033)",
+      "description": "The /6202033 path segment used as campaign identifier in C2 URLs and as temp filename prefix across all three platforms.",
+      "category": "network-ioc",
+      "mitre": "T1071.001",
+      "severity": "high",
+      "pattern": "(?i)/6202033\\b",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-NPM-001",
+      "title": "axios phantom dependency (plain-crypto-js)",
+      "description": "The plain-crypto-js package was injected as a runtime dependency of compromised axios releases. It is never imported — its sole purpose is to trigger a postinstall RAT dropper.",
+      "category": "npm",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "plain-crypto-js",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-NPM-002",
+      "title": "axios@1.14.1 malicious shasum",
+      "description": "npm shasum of the compromised axios@1.14.1 release.",
+      "category": "npm",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)2553649f2322049666871cea80a5d0d6adc700ca",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-NPM-003",
+      "title": "axios@0.30.4 malicious shasum",
+      "description": "npm shasum of the compromised axios@0.30.4 release.",
+      "category": "npm",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)d6f3f62fd3b9f5432f5782b62d8cfd5247d5ee71",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-NPM-004",
+      "title": "plain-crypto-js@4.2.1 malicious shasum",
+      "description": "npm shasum of the malicious plain-crypto-js@4.2.1 dropper package.",
+      "category": "npm",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)07d889e2dadce6f3910dcbc253317d28ca61c766",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-HASH-001",
+      "title": "setup.js dropper SHA256 (plain-crypto-js@4.2.1)",
+      "description": "SHA256 of the obfuscated setup.js RAT dropper in plain-crypto-js@4.2.1. This is the postinstall payload that contacts sfrclak.com C2 and deploys platform-specific second-stage payloads.",
+      "category": "npm",
+      "mitre": "T1195.002",
+      "severity": "critical",
+      "pattern": "(?i)e10b1fa84f1d6481625f741b69892780140d4e0e7769e7491e5f4d894c2e0e09",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-ACCT-001",
+      "title": "axios attacker ProtonMail (ifstap@proton.me)",
+      "description": "Attacker-controlled email set on the compromised jasonsaayman npm account.",
+      "category": "credential-access",
+      "mitre": "T1078.004",
+      "severity": "high",
+      "pattern": "ifstap@proton\\.me",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-ACCT-002",
+      "title": "axios attacker npm account (nrwise)",
+      "description": "Throwaway npm account that published the plain-crypto-js dropper package.",
+      "category": "credential-access",
+      "mitre": "T1078.004",
+      "severity": "high",
+      "pattern": "nrwise@proton\\.me",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-PERSIST-001",
+      "title": "macOS RAT persistence path (com.apple.act.mond)",
+      "description": "macOS persistence artifact at /Library/Caches/com.apple.act.mond mimicking an Apple system daemon.",
+      "category": "persistence",
+      "mitre": "T1543.004",
+      "severity": "critical",
+      "pattern": "com\\.apple\\.act\\.mond",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-PERSIST-002",
+      "title": "Windows PowerShell copy disguised as wt.exe",
+      "description": "The dropper copies powershell.exe to %PROGRAMDATA%/wt.exe to disguise the interpreter as Windows Terminal.",
+      "category": "persistence",
+      "mitre": "T1036.005",
+      "severity": "high",
+      "pattern": "(?i)(programdata|%programdata%).{0,20}wt\\.exe",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-PERSIST-003",
+      "title": "Windows/Linux temp artifact filenames (6202033.*)",
+      "description": "The axios dropper writes platform-specific temp artifacts using campaign ID 6202033 as filename prefix: .vbs and .ps1 on Windows, .py (ld.py) on Linux.",
+      "category": "persistence",
+      "mitre": "T1059.005",
+      "severity": "high",
+      "pattern": "(?i)6202033\\.(vbs|ps1|py)",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-PERSIST-004",
+      "title": "Linux RAT payload path (/tmp/ld.py)",
+      "description": "The axios dropper downloads the Linux second-stage RAT to /tmp/ld.py via curl from the C2 server.",
+      "category": "persistence",
+      "mitre": "T1059.006",
+      "severity": "high",
+      "pattern": "(?i)/tmp/ld\\.py",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-EXFIL-001",
+      "title": "axios C2 POST body pattern (packages.npm.org/product)",
+      "description": "POST body sent to C2 to select platform-specific payload. Mimics npm registry traffic. macOS=product0, Windows=product1, Linux=product2.",
+      "category": "exfiltration",
+      "mitre": "T1071.001",
+      "severity": "high",
+      "pattern": "packages\\.npm\\.org/product[012]",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-OBF-001",
+      "title": "axios dropper XOR key (OrDeR_7077)",
+      "description": "XOR cipher key used in the setup.js two-layer string obfuscation scheme.",
+      "category": "obfuscation",
+      "mitre": "T1027",
+      "severity": "high",
+      "pattern": "OrDeR_7077",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-OBF-002",
+      "title": "axios dropper string table variable (stq[]/_trans)",
+      "description": "The setup.js dropper stores all sensitive strings in an array named stq[] with a two-layer XOR+base64 obfuscation scheme using _trans_1 and _trans_2 decoder functions.",
+      "category": "obfuscation",
+      "mitre": "T1027",
+      "severity": "high",
+      "pattern": "(?i)(stq\\[|_trans_[12])\\s*[=(]",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-CLEANUP-001",
+      "title": "postinstall self-cleanup via package.md rename",
+      "description": "The dropper deletes setup.js and package.json, then renames a pre-staged package.md to package.json to hide evidence.",
+      "category": "defense-evasion",
+      "mitre": "T1070.004",
+      "severity": "high",
+      "pattern": "(?i)package\\.md.{0,60}package\\.json",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-CLEANUP-002",
+      "title": "postinstall self-deletion pattern (fs.unlink + __filename)",
+      "description": "The dropper deletes itself via fs.unlink(__filename) after execution, a distinctive anti-forensics technique where a Node.js postinstall script removes its own source file.",
+      "category": "defense-evasion",
+      "mitre": "T1070.004",
+      "severity": "high",
+      "pattern": "(?i)fs\\.unlink\\s*\\(\\s*__filename",
+      "target": "content"
+    },
+    {
+      "id": "AXIOS-OIDC-001",
+      "title": "npm publish without OIDC trusted publisher binding",
+      "description": "The compromised axios releases were published without npm OIDC Trusted Publisher binding, breaking the pattern of all legitimate releases. Detecting references to missing trustedPublisher in npm registry metadata helps identify account hijack publishes.",
+      "category": "npm",
+      "mitre": "T1195.002",
+      "severity": "medium",
+      "pattern": "(?i)_npmUser.{0,120}(no\\s+trustedPublisher|without.*oidc|no.*gitHead)",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-IOC-016",
+      "title": "TeamPCP C2 IP 83.142.209.203 (bare, any port)",
+      "description": "IP address 83.142.209.203 used by the telnyx campaign payload delivery. Built-in TPCP-TEL-004 matches only port 8080; this catches the bare IP on any port or in IOC lists.",
+      "category": "network-ioc",
+      "mitre": "T1071.001",
+      "severity": "high",
+      "pattern": "\\b83\\.142\\.209\\.203\\b",
+      "target": "content"
+    },
+    {
+      "id": "TPCP-IOC-017",
+      "title": "TeamPCP typosquat domain aquasecurtiy.info",
+      "description": "Typosquat domain variant of aquasecurity.com. Built-in TPCP-IOC-001 covers aquasecurtiy.org; this covers the .info TLD variant observed in the 2026-CRAPPIE IR session.",
+      "category": "network-ioc",
+      "mitre": "T1583.001",
+      "severity": "high",
+      "pattern": "(?i)\\baquasecurtiy(?:\\.|\\[\\.\\])info\\b",
+      "target": "content"
+    }
+  ]
+}

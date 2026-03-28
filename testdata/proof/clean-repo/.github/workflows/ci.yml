@@ -1,0 +1,10 @@
+name: CI
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@69223e85236df3176ae951cf2f3fad48295979cb
+      - run: go test ./...

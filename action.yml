@@ -1,0 +1,189 @@
+name: skeptic
+description: Scan for structural trust boundary vulnerabilities that CVE scanners, SAST tools, and secret scanners miss.
+author: '@TGPSKI Tyler Pate'
+
+inputs:
+  path:
+    description: Root path to scan
+    required: false
+    default: '.'
+  format:
+    description: 'Output format: text|json|sarif|markdown'
+    required: false
+    default: 'sarif'
+  mode:
+    description: 'Operating mode: developer|ir|deep'
+    required: false
+    default: 'developer'
+  preset:
+    description: 'Scan preset: quick|dev|ci|hunt|machine-identity|ai-workload'
+    required: false
+    default: 'ci'
+  fail-on:
+    description: 'Severity gate: none|info|low|medium|high|critical'
+    required: false
+    default: 'high'
+  fail-on-score:
+    description: 'Risk score gate (0-100, 0 disables)'
+    required: false
+    default: '0'
+  scan-style:
+    description: 'Detection style: pattern|behavior|hybrid'
+    required: false
+    default: 'pattern'
+  threat-mode:
+    description: 'Focus area: all|machine-identity|ai-workload'
+    required: false
+    default: 'all'
+  config:
+    description: 'Path to .skeptic.* config file (empty = auto-discover)'
+    required: false
+    default: ''
+  rules-file:
+    description: Path to external rule pack JSON
+    required: false
+    default: ''
+  rules-pubkey:
+    description: Path to Ed25519 public key for rule pack signature verification
+    required: false
+    default: ''
+  baseline:
+    description: Path to prior JSON report for diff-only gating
+    required: false
+    default: ''
+  waivers:
+    description: Path to JSON waiver file
+    required: false
+    default: ''
+  go-version:
+    description: Go version for building skeptic
+    required: false
+    default: '1.24'
+  sarif-upload:
+    description: Auto-upload SARIF to GitHub code scanning (requires format=sarif)
+    required: false
+    default: 'true'
+  extra-args:
+    description: Additional CLI flags passed directly to skeptic scan
+    required: false
+    default: ''
+
+outputs:
+  exit-code:
+    description: 'skeptic exit code: 0=pass, 1=error, 2=bad args, 3=policy failure'
+    value: ${{ steps.scan.outputs.exit-code }}
+  sarif-file:
+    description: Path to the SARIF results file (when format=sarif)
+    value: ${{ steps.scan.outputs.sarif-file }}
+  result-file:
+    description: Path to the results file (any format)
+    value: ${{ steps.scan.outputs.result-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: true
+
+    - name: Build skeptic
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        COMMIT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+        DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        GOVERS="$(go version | awk '{print $3}')"
+        LDFLAGS="-X main.buildCommit=${COMMIT} -X main.buildDate=${DATE} -X main.buildGoVersion=${GOVERS}"
+        mkdir -p bin
+        go build -ldflags "${LDFLAGS}" -o bin/skeptic ./cmd/skeptic
+
+    - name: Run skeptic scan
+      id: scan
+      shell: bash
+      run: |
+        SKEPTIC="${{ github.action_path }}/bin/skeptic"
+
+        SUFFIX="$(date +%s)-$$"
+        RESULT_FILE="${RUNNER_TEMP}/skeptic-results-${SUFFIX}"
+        if [ "${{ inputs.format }}" = "sarif" ]; then
+          RESULT_FILE="${RESULT_FILE}.sarif"
+        elif [ "${{ inputs.format }}" = "json" ]; then
+          RESULT_FILE="${RESULT_FILE}.json"
+        elif [ "${{ inputs.format }}" = "markdown" ]; then
+          RESULT_FILE="${RESULT_FILE}.md"
+        else
+          RESULT_FILE="${RESULT_FILE}.txt"
+        fi
+
+        ARGS="scan"
+        ARGS="${ARGS} --path ${{ inputs.path }}"
+        ARGS="${ARGS} --format ${{ inputs.format }}"
+        ARGS="${ARGS} --mode ${{ inputs.mode }}"
+        ARGS="${ARGS} --preset ${{ inputs.preset }}"
+        ARGS="${ARGS} --fail-on ${{ inputs.fail-on }}"
+        ARGS="${ARGS} --fail-on-score ${{ inputs.fail-on-score }}"
+        ARGS="${ARGS} --scan-style ${{ inputs.scan-style }}"
+        ARGS="${ARGS} --threat-mode ${{ inputs.threat-mode }}"
+
+        if [ -n "${{ inputs.config }}" ]; then
+          ARGS="${ARGS} --config ${{ inputs.config }}"
+        fi
+        if [ -n "${{ inputs.rules-file }}" ]; then
+          ARGS="${ARGS} --rules-file ${{ inputs.rules-file }}"
+        fi
+        if [ -n "${{ inputs.rules-pubkey }}" ]; then
+          ARGS="${ARGS} --rules-pubkey ${{ inputs.rules-pubkey }}"
+        fi
+        if [ -n "${{ inputs.baseline }}" ]; then
+          ARGS="${ARGS} --baseline ${{ inputs.baseline }}"
+        fi
+        if [ -n "${{ inputs.waivers }}" ]; then
+          ARGS="${ARGS} --waivers ${{ inputs.waivers }}"
+        fi
+        if [ -n "${{ inputs.extra-args }}" ]; then
+          ARGS="${ARGS} ${{ inputs.extra-args }}"
+        fi
+
+        LOG_FILE="${RUNNER_TEMP}/skeptic-stderr-${SUFFIX}.log"
+        EXIT_CODE=0
+        ${SKEPTIC} ${ARGS} > "${RESULT_FILE}" 2>"${LOG_FILE}" || EXIT_CODE=$?
+        if [ -s "${LOG_FILE}" ]; then
+          cat "${LOG_FILE}" >&2
+        fi
+
+        echo "exit-code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
+        echo "result-file=${RESULT_FILE}" >> "${GITHUB_OUTPUT}"
+        if [ "${{ inputs.format }}" = "sarif" ]; then
+          echo "sarif-file=${RESULT_FILE}" >> "${GITHUB_OUTPUT}"
+        fi
+
+        if [ "${EXIT_CODE}" -ne 0 ] && [ "${EXIT_CODE}" -ne 3 ]; then
+          echo "::error::skeptic scan failed with exit code ${EXIT_CODE}"
+          exit "${EXIT_CODE}"
+        fi
+
+        if [ "${EXIT_CODE}" -eq 3 ]; then
+          echo "::warning::skeptic policy failure (--fail-on threshold exceeded)"
+        fi
+
+    - name: Upload SARIF to GitHub code scanning
+      if: always() && inputs.sarif-upload == 'true' && inputs.format == 'sarif' && steps.scan.outputs.sarif-file != ''
+      uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+      with:
+        sarif_file: ${{ steps.scan.outputs.sarif-file }}
+        wait-for-processing: false
+
+    - name: Upload scan results artifact
+      if: always() && steps.scan.outputs.result-file != ''
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: skeptic-results-${{ inputs.format }}-${{ inputs.fail-on }}
+        path: ${{ steps.scan.outputs.result-file }}
+        retention-days: 30
+
+    - name: Fail on policy violation
+      if: steps.scan.outputs.exit-code == '3'
+      shell: bash
+      run: exit 3
