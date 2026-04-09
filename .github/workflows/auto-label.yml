@@ -1,0 +1,45 @@
+name: Auto-label trusted PRs
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            CODEOWNERS
+            OWNERS
+          sparse-checkout-cone-mode: false
+
+      - name: Apply ok-to-test if author is trusted
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          TRUSTED_USERS=""
+
+          if [ -f CODEOWNERS ]; then
+            TRUSTED_USERS="$TRUSTED_USERS $(grep -oP '@\K[\w-]+' CODEOWNERS | sort -u)"
+          fi
+
+          if [ -f OWNERS ]; then
+            TRUSTED_USERS="$TRUSTED_USERS $(grep -oP 'github:\s*\K[\w-]+' OWNERS | sort -u)"
+          fi
+
+          for user in $TRUSTED_USERS; do
+            if [ "$PR_AUTHOR" = "$user" ]; then
+              gh pr edit "$PR_NUMBER" --add-label "ok-to-test"
+              echo "Labeled PR #${PR_NUMBER} with ok-to-test (author: ${PR_AUTHOR})"
+              exit 0
+            fi
+          done
+
+          echo "Author ${PR_AUTHOR} is not in CODEOWNERS or OWNERS — skipping"
