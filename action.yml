@@ -1,6 +1,10 @@
-name: skeptic
+name: go-skeptic
 description: Scan for structural trust boundary vulnerabilities that CVE scanners, SAST tools, and secret scanners miss.
 author: '@TGPSKI Tyler Pate'
+
+branding:
+  icon: crosshair
+  color: purple
 
 inputs:
   path:
