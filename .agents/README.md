@@ -7,6 +7,7 @@ This `.agents` directory provides reusable skill assets for operating `skeptic` 
 - `skills/cli-flag-review/SKILL.md`
 - `skills/doc-accuracy-audit/SKILL.md`
 - `skills/documentation-lifecycle/SKILL.md`
+- `skills/go-release/SKILL.md`
 - `skills/ruleset-lifecycle-operations/SKILL.md`
 - `skills/threat-rules-ingestion/SKILL.md`
 - `skills/workflow-action-updates/SKILL.md`
