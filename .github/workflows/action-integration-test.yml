@@ -25,6 +25,8 @@ jobs:
       action: ${{ steps.filter.outputs.action }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
       - id: filter
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
@@ -33,7 +35,7 @@ jobs:
           fi
           BASE="${{ github.event.pull_request.base.sha }}"
           HEAD="${{ github.event.pull_request.head.sha }}"
-          CHANGED=$(git diff --name-only "$BASE"..."$HEAD" || git diff --name-only HEAD~1)
+          CHANGED=$(git diff --name-only "$BASE"..."$HEAD")
           if echo "$CHANGED" | grep -qE '^(action\.yml|cmd/|internal/|\.github/workflows/action-integration-test\.yml)'; then
             echo "action=true" >> "$GITHUB_OUTPUT"
           else
