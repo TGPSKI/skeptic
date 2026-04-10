@@ -371,6 +371,7 @@ Skills under `.agents/skills/` provide structured automation workflows:
 | `cli-flag-review` | Audit CLI flag definitions, help text, config-precedence safety |
 | `doc-accuracy-audit` | Verify documentation claims against codebase, tighten prose |
 | `documentation-lifecycle` | Generate/update per-module docs, architecture docs, Mermaid diagrams |
+| `go-release` | Manage Go module release lifecycle: changelog, tagging, pkg.go.dev verification |
 | `ruleset-lifecycle-operations` | Add/update rules, manage groups, migrate rules across groups |
 | `threat-rules-ingestion` | Ingest security research into signed scanner rule packs |
 | `workflow-action-updates` | Audit and update GitHub Actions to latest SHA-pinned versions |
