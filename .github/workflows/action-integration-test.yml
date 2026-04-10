@@ -10,7 +10,7 @@ on:
       - 'internal/**'
   pull_request:
     branches: [main]
-    types: [synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, labeled]
 
 permissions:
   contents: read
@@ -19,6 +19,7 @@ jobs:
   changes:
     if: >-
       github.event_name == 'push' ||
+      github.event.action == 'opened' ||
       contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     runs-on: ubuntu-latest
     outputs:

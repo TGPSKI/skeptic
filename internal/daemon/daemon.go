@@ -1,5 +1,3 @@
-// Package daemon implements the skeptic HTTP daemon: scheduled scans, optional
-// filesystem watch, health/status/report/metrics endpoints, and graceful shutdown.
 package daemon
 
 import (

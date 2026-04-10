@@ -1,4 +1,3 @@
-// Package daemon provides a bounded HTTP client for the skeptic local daemon API.
 package daemon
 
 import (
