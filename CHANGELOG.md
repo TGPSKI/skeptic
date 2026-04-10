@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.0 — 2026-04-10
+
+### License
+
+- Relicense from Apache 2.0 to GNU General Public License v3.0
+
+### CI/CD
+
+- Fix auto-label/CI race condition: remove `opened` from CI pull_request triggers
+- Fix test-action required check for path-filtered PRs: add `changes` gate job and `test-action-result` rollup job
+- Update `main-ci-and-integrity` ruleset to require `test-action-result`
+
 ## v0.1.0 — 2026-04-06
 
 Initial public release.
