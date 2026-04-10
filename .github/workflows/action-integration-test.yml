@@ -10,26 +10,43 @@ on:
       - 'internal/**'
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, labeled]
-    paths:
-      - 'action.yml'
-      - '.github/workflows/action-integration-test.yml'
-      - 'cmd/**'
-      - 'internal/**'
+    types: [synchronize, reopened, labeled]
 
 permissions:
   contents: read
 
 jobs:
-  test-action:
+  changes:
     if: >-
       github.event_name == 'push' ||
       contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     runs-on: ubuntu-latest
+    outputs:
+      action: ${{ steps.filter.outputs.action }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "action=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE"..."$HEAD" || git diff --name-only HEAD~1)
+          if echo "$CHANGED" | grep -qE '^(action\.yml|cmd/|internal/|\.github/workflows/action-integration-test\.yml)'; then
+            echo "action=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "action=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test-action:
+    needs: [changes]
+    if: needs.changes.outputs.action == 'true'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      # Scan proof fixtures with fail-on: none -- should succeed with findings
       - name: Scan proof fixtures (advisory)
         id: advisory-scan
         uses: ./
@@ -47,7 +64,6 @@ jobs:
             exit 1
           fi
 
-      # Scan proof fixtures with fail-on: low -- should trigger policy failure
       - name: Scan proof fixtures (gated)
         id: gated-scan
         uses: ./
@@ -66,7 +82,6 @@ jobs:
             exit 1
           fi
 
-      # Verify JSON output was produced
       - name: Verify JSON result file exists
         shell: bash
         run: |
@@ -80,7 +95,6 @@ jobs:
             exit 1
           fi
 
-      # Scan clean repo fixture with fail-on: low -- should pass
       - name: Scan clean fixture
         id: clean-scan
         uses: ./
@@ -95,5 +109,15 @@ jobs:
         run: |
           if [ "${{ steps.clean-scan.outputs.exit-code }}" != "0" ]; then
             echo "::error::Expected exit code 0 for clean scan, got ${{ steps.clean-scan.outputs.exit-code }}"
+            exit 1
+          fi
+
+  test-action-result:
+    if: always()
+    needs: [changes, test-action]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ "${{ needs.test-action.result }}" = "failure" ] || [ "${{ needs.changes.result }}" = "failure" ]; then
             exit 1
           fi
