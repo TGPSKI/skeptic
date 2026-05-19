@@ -1,3 +1,11 @@
+## v0.3.0 — 2026-05-18
+
+### Documentation
+- Add package documentation for pkg.go.dev directories view
+
+### CI/CD
+- Add release workflow (manual dispatch)
+
 # Changelog
 
 ## v0.2.0 — 2026-04-10
