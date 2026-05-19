@@ -1,3 +1,9 @@
+## v0.2.1 — 2026-05-19
+
+### Documentation
+- Add package documentation for pkg.go.dev directories view (#14)
+- Add release workflow (manual dispatch) (#12)
+
 # Changelog
 
 ## v0.2.0 — 2026-04-10
