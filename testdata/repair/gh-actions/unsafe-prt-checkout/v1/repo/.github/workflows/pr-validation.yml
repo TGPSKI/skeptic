@@ -1,0 +1,21 @@
+name: PR Validation
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fc789d81e0d1cf00352f24ef1e99325e0e91a1ba # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-go@218b2b12334715311c877b1350990da878e4f4a3 # v5
+        with:
+          go-version: "1.24"
+      - name: Test
+        run: make test
+      - name: Format check
+        run: test -z "$(gofmt -l .)"

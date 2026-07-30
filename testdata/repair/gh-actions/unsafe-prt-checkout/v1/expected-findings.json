@@ -1,0 +1,11 @@
+{
+  "scan_invocation": "skeptic scan --format json --mode ir <repo>",
+  "baseline_counts": {
+    "CI-PRT-001": 1,
+    "CI-PRT-002": 1
+  },
+  "baseline_severities": {
+    "CI-PRT-001": "high",
+    "CI-PRT-002": "high"
+  }
+}
