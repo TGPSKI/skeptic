@@ -1,0 +1,11 @@
+{
+  "scan_invocation": "skeptic scan --format json --mode ir <repo>",
+  "baseline_counts": {
+    "POL-GHA-001": 5,
+    "SCM-TRUST-001": 5
+  },
+  "baseline_severities": {
+    "POL-GHA-001": "high",
+    "SCM-TRUST-001": "high"
+  }
+}
