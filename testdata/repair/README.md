@@ -90,6 +90,6 @@ may not be used to score anything.
 | family | defect | targeted rules | status |
 |---|---|---|---|
 | gh-actions | mutable-action-pin | SCM-TRUST-001 | pilot v1 |
-| gh-actions | unsafe-prt-checkout | CI-PRT-001, CI-PRT-002 | planned |
+| gh-actions | unsafe-prt-checkout | CI-PRT-001, CI-PRT-002 | pilot v1 |
 | gh-actions | excessive-permissions | CLOUD-ID-001 | planned |
 | gh-actions | event-field-injection | CI-ABUSE-002/003/005 | planned |
