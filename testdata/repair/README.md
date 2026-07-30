@@ -64,6 +64,23 @@ The scorer emits a JSON verdict (per-check booleans + `pass`) on stdout;
 exit 0 iff the conjunction holds. Component failures are first-class
 results for the eval, not noise.
 
+**Comment-stripping policy (signed 2026-07-29, "semantic-consistent"):**
+both the exploit tests and `targeted_removed` judge **comment-stripped**
+content — repairs are judged on semantics, not prose. Motivating boundary
+cases (ex-15 pilot, 2026-07-29): a model that correctly repaired the
+`pull_request_target` defect wrote `# Fixed: changed pull_request_target
+to pull_request`, and the pattern rule re-flagged its own annotation,
+producing a scan→comment→scan loop; a second cell left a benign
+`head.sha` line whose privileged context had been removed. Under this
+policy those repairs pass; the as-scanned strict reading is preserved in
+every verdict as the `scanner_clean_strict` component score, so anyone who
+prefers the strict contract can re-gate on it. Stripping rule for this
+corpus: `#`-to-end-of-line (YAML/shell/Makefile); a family whose fixtures
+use another comment syntax must declare its stripping rule in `task.json`
+before the corpus freezes. The policy is deliberately NOT implemented by
+loosening scanner rules — the scanner's own semantics stay skeptic's
+product decision, and the eval must not tune them to model behavior.
+
 ## Grader validation — the bidirectional selftest
 
 `tools/selftest.sh` is the gate that must pass **before any model run**:
