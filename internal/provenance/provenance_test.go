@@ -58,7 +58,7 @@ func TestRunProvenanceChecksHappyPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	findings := RunProvenanceChecks([]string{dir}, manifestPath, false, false)
+	findings := RunProvenanceChecks([]string{dir}, manifestPath, false, false, nil)
 	for _, f := range findings {
 		if f.RuleID == "PROV-001" {
 			t.Errorf("unexpected hash mismatch finding: %v", f)
@@ -84,7 +84,7 @@ func TestRunProvenanceChecksHashMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	findings := RunProvenanceChecks([]string{dir}, manifestPath, false, false)
+	findings := RunProvenanceChecks([]string{dir}, manifestPath, false, false, nil)
 	found := false
 	for _, f := range findings {
 		if f.RuleID == "PROV-001" {
@@ -133,14 +133,14 @@ func TestNpmPackageNameFromLockPath(t *testing.T) {
 }
 
 func TestRunProvenanceChecksNoManifest(t *testing.T) {
-	findings := RunProvenanceChecks([]string{t.TempDir()}, "", false, false)
+	findings := RunProvenanceChecks([]string{t.TempDir()}, "", false, false, nil)
 	if len(findings) != 0 {
 		t.Fatal("expected no findings with empty manifest path")
 	}
 }
 
 func TestRunProvenanceChecksMissingFile(t *testing.T) {
-	findings := RunProvenanceChecks([]string{t.TempDir()}, "/nonexistent/manifest.json", false, false)
+	findings := RunProvenanceChecks([]string{t.TempDir()}, "/nonexistent/manifest.json", false, false, nil)
 	if len(findings) == 0 {
 		t.Fatal("expected error finding for missing manifest")
 	}
@@ -277,7 +277,7 @@ func TestRunProvenanceChecksStaleManifestEntry(t *testing.T) {
 	if err := os.WriteFile(path, raw, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	findings := RunProvenanceChecks([]string{dir}, path, false, false)
+	findings := RunProvenanceChecks([]string{dir}, path, false, false, nil)
 	found := false
 	for _, f := range findings {
 		if f.RuleID == "PROV-005" {

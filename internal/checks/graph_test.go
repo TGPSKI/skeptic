@@ -83,7 +83,7 @@ func TestRunIdentityGraphChecks(t *testing.T) {
 	dir := t.TempDir()
 	policy := `{"Statement": [{"Effect": "Allow", "Action": ["*"], "Resource": ["*"]}]}`
 	os.WriteFile(filepath.Join(dir, "iam-policy.json"), []byte(policy), 0o644)
-	findings := RunIdentityGraphChecks([]string{dir}, 3, false)
+	findings := RunIdentityGraphChecks([]string{dir}, 3, false, nil)
 	if len(findings) == 0 {
 		t.Fatal("expected findings from graph check")
 	}
@@ -117,7 +117,7 @@ subjects:
 	if err := os.WriteFile(path, []byte(yaml), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	findings := RunIdentityGraphChecks([]string{dir}, 4, false)
+	findings := RunIdentityGraphChecks([]string{dir}, 4, false, nil)
 	var saw009 bool
 	for _, f := range findings {
 		if f.RuleID == "GRAPH-009" {
@@ -136,7 +136,7 @@ func TestCrossFileIAMGRAPH005(t *testing.T) {
 	wild := `{"Statement":[{"Effect":"Allow","Action":["*"],"Resource":["*"]}]}`
 	os.WriteFile(filepath.Join(dir, "assume-policy.json"), []byte(assume), 0o644)
 	os.WriteFile(filepath.Join(dir, "TargetRole.json"), []byte(wild), 0o644)
-	findings := RunIdentityGraphChecks([]string{dir}, 4, false)
+	findings := RunIdentityGraphChecks([]string{dir}, 4, false, nil)
 	var saw005 bool
 	for _, f := range findings {
 		if f.RuleID == "GRAPH-005" {
@@ -399,5 +399,56 @@ subjects:
 	}
 	if p := k8sRBACWildcardPaths(g, 2); len(p) != 1 {
 		t.Fatalf("maxHops=2 should reach wildcard, got %#v", p)
+	}
+}
+
+// An ignored directory must produce no findings. This walker is independent of
+// the one in internal/scan, so it needs its own coverage: without the
+// ignorePaths argument it walked and reported everything (#88).
+func TestRunIdentityGraphChecksHonorsIgnorePaths(t *testing.T) {
+	dir := t.TempDir()
+	fixtures := filepath.Join(dir, "testdata", "proof")
+	if err := os.MkdirAll(fixtures, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	policy := `{"Statement": [{"Effect": "Allow", "Action": ["*"], "Resource": ["*"]}]}`
+	if err := os.WriteFile(filepath.Join(fixtures, "iam-policy.json"), []byte(policy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := RunIdentityGraphChecks([]string{dir}, 3, false, nil); len(got) == 0 {
+		t.Fatal("expected findings without an ignore list; fixture is not triggering the check")
+	}
+
+	for _, pattern := range []string{"testdata/proof/**", "**/testdata/proof/**", "testdata/**"} {
+		if got := RunIdentityGraphChecks([]string{dir}, 3, false, []string{pattern}); len(got) != 0 {
+			t.Errorf("pattern %q: expected no findings, got %d (first: %s %s)",
+				pattern, len(got), got[0].RuleID, got[0].File)
+		}
+	}
+}
+
+// Findings carry a path relative to the scan root, the same basis internal/scan
+// uses. An absolute path cannot match a repo-relative ignore pattern and leaks
+// the scanning host's layout.
+func TestRunIdentityGraphChecksReportsRelativePaths(t *testing.T) {
+	dir := t.TempDir()
+	sub := filepath.Join(dir, "infra")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	policy := `{"Statement": [{"Effect": "Allow", "Action": ["*"], "Resource": ["*"]}]}`
+	if err := os.WriteFile(filepath.Join(sub, "iam-policy.json"), []byte(policy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	findings := RunIdentityGraphChecks([]string{dir}, 3, false, nil)
+	if len(findings) == 0 {
+		t.Fatal("expected findings")
+	}
+	for _, f := range findings {
+		if filepath.IsAbs(f.File) {
+			t.Errorf("%s reported an absolute path: %s", f.RuleID, f.File)
+		}
 	}
 }

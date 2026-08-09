@@ -178,7 +178,7 @@ func decodeFlexibleBytes(s string) ([]byte, error) {
 }
 
 // RunProvenanceChecks compares lockfile hashes against a provenance manifest.
-func RunProvenanceChecks(scanRoots []string, manifestPath string, requireSigned bool, redactSecrets bool) []model.Finding {
+func RunProvenanceChecks(scanRoots []string, manifestPath string, requireSigned bool, redactSecrets bool, ignorePaths []string) []model.Finding {
 	if strings.TrimSpace(manifestPath) == "" {
 		return nil
 	}
@@ -193,7 +193,7 @@ func RunProvenanceChecks(scanRoots []string, manifestPath string, requireSigned 
 		"cargo": true, "poetry": true, "pnpm": true, "yarn": true,
 	}
 	unionLockKeys := make(map[string]struct{})
-	manifests := checks.DiscoverManifests(scanRoots)
+	manifests := checks.DiscoverManifests(scanRoots, ignorePaths)
 	for _, mf := range manifests {
 		if !allowed[mf.Ecosystem] {
 			continue

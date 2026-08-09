@@ -19,6 +19,11 @@ type Options struct {
 	IdentityGraphHops int
 	RedactSecrets     bool
 
+	// IgnorePaths mirrors model.ScanOptions.IgnorePaths. The identity-graph
+	// check walks the tree itself rather than reusing the scan walker's
+	// results, so it needs the patterns to skip the same paths.
+	IgnorePaths []string
+
 	ProvenanceManifestPath          string
 	RequireSignedProvenanceManifest bool
 	SBOMPath                        string
@@ -43,13 +48,13 @@ func EnrichReport(report *model.Report, opts Options, roots []string, threatMode
 		logger = logging.NewLogger(logging.LogError, nil)
 	}
 	if opts.PolicyChecks {
-		report.Findings = append(report.Findings, checks.RunDepChecks(roots, opts.RedactSecrets)...)
+		report.Findings = append(report.Findings, checks.RunDepChecks(roots, opts.RedactSecrets, opts.IgnorePaths)...)
 	}
 	if threatMode == model.ThreatModeAll || threatMode == model.ThreatModeMachineIdentity {
-		report.Findings = append(report.Findings, checks.RunIdentityGraphChecks(roots, opts.IdentityGraphHops, opts.RedactSecrets)...)
+		report.Findings = append(report.Findings, checks.RunIdentityGraphChecks(roots, opts.IdentityGraphHops, opts.RedactSecrets, opts.IgnorePaths)...)
 	}
 	if opts.ProvenanceManifestPath != "" {
-		report.Findings = append(report.Findings, provenance.RunProvenanceChecks(roots, opts.ProvenanceManifestPath, opts.RequireSignedProvenanceManifest, opts.RedactSecrets)...)
+		report.Findings = append(report.Findings, provenance.RunProvenanceChecks(roots, opts.ProvenanceManifestPath, opts.RequireSignedProvenanceManifest, opts.RedactSecrets, opts.IgnorePaths)...)
 	}
 	enrichSBOM(report, opts, roots, logger)
 	if opts.AutoDiscoverMCP {
@@ -93,7 +98,7 @@ func enrichSBOM(report *model.Report, opts Options, roots []string, logger *logg
 	if len(components) == 0 {
 		return
 	}
-	manifests := checks.DiscoverManifests(roots)
+	manifests := checks.DiscoverManifests(roots, opts.IgnorePaths)
 	allHashes := make(map[string]string)
 	for _, mf := range manifests {
 		data, readErr := os.ReadFile(mf.Path)

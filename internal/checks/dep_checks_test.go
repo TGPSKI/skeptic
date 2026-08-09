@@ -77,7 +77,7 @@ func TestRunDepChecks(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(manifest), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	findings := RunDepChecks([]string{dir}, false)
+	findings := RunDepChecks([]string{dir}, false, nil)
 	if len(findings) == 0 {
 		t.Fatal("expected findings from dependency check")
 	}
@@ -152,7 +152,7 @@ func TestCheckMissingLockfile(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{}`), 0644); err != nil {
 			t.Fatal(err)
 		}
-		findings := CheckMissingLockfile([]string{dir})
+		findings := CheckMissingLockfile([]string{dir}, nil)
 		found := false
 		for _, f := range findings {
 			if f.RuleID == "DEP-LOCK-003" {
@@ -170,7 +170,7 @@ func TestCheckMissingLockfile(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[build-system]`), 0644); err != nil {
 			t.Fatal(err)
 		}
-		findings := CheckMissingLockfile([]string{dir})
+		findings := CheckMissingLockfile([]string{dir}, nil)
 		found := false
 		for _, f := range findings {
 			if f.RuleID == "DEP-LOCK-004" {
@@ -191,7 +191,7 @@ func TestCheckMissingLockfile(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, "package-lock.json"), []byte(`{}`), 0644); err != nil {
 			t.Fatal(err)
 		}
-		findings := CheckMissingLockfile([]string{dir})
+		findings := CheckMissingLockfile([]string{dir}, nil)
 		for _, f := range findings {
 			if f.RuleID == "DEP-LOCK-003" {
 				t.Error("unexpected DEP-LOCK-003 when lockfile present")
@@ -200,7 +200,7 @@ func TestCheckMissingLockfile(t *testing.T) {
 	})
 
 	t.Run("nonexistent root handled gracefully", func(t *testing.T) {
-		findings := CheckMissingLockfile([]string{"/nonexistent/path/that/does/not/exist"})
+		findings := CheckMissingLockfile([]string{"/nonexistent/path/that/does/not/exist"}, nil)
 		foundErr := false
 		for _, f := range findings {
 			if f.RuleID == "DEP-LOCK-ERR" {

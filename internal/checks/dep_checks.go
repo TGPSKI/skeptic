@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/TGPSKI/skeptic/internal/model"
+	"github.com/TGPSKI/skeptic/internal/pathfilter"
 	"github.com/TGPSKI/skeptic/internal/security"
 )
 
@@ -35,14 +36,17 @@ var PopularPackages = map[string][]string{
 }
 
 // RunDepChecks scans dependency manifests found during filesystem walk.
-func RunDepChecks(scanRoots []string, redactSecrets bool) []model.Finding {
+// ignorePaths carries the same --ignore-paths patterns internal/scan applies.
+// This check walks the tree itself, so without them a caller who excluded a
+// directory would still get DEP- findings from it.
+func RunDepChecks(scanRoots []string, redactSecrets bool, ignorePaths []string) []model.Finding {
 	var allFindings []model.Finding
-	manifests := DiscoverManifests(scanRoots)
+	manifests := DiscoverManifests(scanRoots, ignorePaths)
 	for _, mf := range manifests {
 		findings := CheckManifest(mf.Path, mf.Ecosystem, redactSecrets)
 		allFindings = append(allFindings, findings...)
 	}
-	allFindings = append(allFindings, CheckMissingLockfile(scanRoots)...)
+	allFindings = append(allFindings, CheckMissingLockfile(scanRoots, ignorePaths)...)
 	return allFindings
 }
 
@@ -53,7 +57,7 @@ type ManifestEntry struct {
 }
 
 // DiscoverManifests walks each scan root for known lock/manifest filenames, skipping vendor-like dirs.
-func DiscoverManifests(roots []string) []ManifestEntry {
+func DiscoverManifests(roots []string, ignorePaths []string) []ManifestEntry {
 	var manifests []ManifestEntry
 	manifestNames := map[string]string{
 		"package-lock.json": "npm",
@@ -72,11 +76,21 @@ func DiscoverManifests(roots []string) []ManifestEntry {
 			if err != nil {
 				return nil
 			}
+			relPath, relErr := filepath.Rel(root, path)
+			if relErr != nil {
+				relPath = path
+			}
 			if d.IsDir() {
 				name := d.Name()
 				if name == "node_modules" || name == "vendor" || name == ".git" || name == ".venv" {
 					return filepath.SkipDir
 				}
+				if relPath != "." && pathfilter.Matches(relPath, ignorePaths) {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if pathfilter.Matches(relPath, ignorePaths) {
 				return nil
 			}
 			if eco, ok := manifestNames[d.Name()]; ok {
@@ -266,7 +280,7 @@ func CheckNPMLockfileIntegrity(data []byte, fileLabel string, redact bool) []mod
 }
 
 // CheckMissingLockfile detects manifest files without corresponding lockfiles in the same directory.
-func CheckMissingLockfile(roots []string) []model.Finding {
+func CheckMissingLockfile(roots []string, ignorePaths []string) []model.Finding {
 	var findings []model.Finding
 	type manifestInfo struct {
 		path      string
@@ -283,11 +297,21 @@ func CheckMissingLockfile(roots []string) []model.Finding {
 			if err != nil {
 				return err
 			}
+			relPath, relErr := filepath.Rel(root, path)
+			if relErr != nil {
+				relPath = path
+			}
 			if d.IsDir() {
 				name := d.Name()
 				if name == "node_modules" || name == "vendor" || name == ".git" || name == ".venv" {
 					return filepath.SkipDir
 				}
+				if relPath != "." && pathfilter.Matches(relPath, ignorePaths) {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if pathfilter.Matches(relPath, ignorePaths) {
 				return nil
 			}
 			dir := filepath.Dir(path)
