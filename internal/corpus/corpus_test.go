@@ -91,9 +91,14 @@ func TestKeyWriteLoad(t *testing.T) {
 	if !bytes.Equal(key, loaded) {
 		t.Fatal("loaded key differs from written key")
 	}
-	info, _ := os.Stat(path)
-	if info.Mode().Perm() != 0600 {
-		t.Fatalf("expected 0600, got %o", info.Mode().Perm())
+	// Windows has no POSIX mode bits: Go synthesizes 0666 for any writable
+	// file. WriteKey still passes 0600, which is what a Unix host enforces.
+	// Restricting the key on Windows would need an ACL API outside the stdlib.
+	if runtime.GOOS != "windows" {
+		info, _ := os.Stat(path)
+		if info.Mode().Perm() != 0600 {
+			t.Fatalf("expected 0600, got %o", info.Mode().Perm())
+		}
 	}
 }
 
@@ -306,6 +311,14 @@ func TestDefaultPathUsesXDGData(t *testing.T) {
 	switch runtime.GOOS {
 	case "darwin":
 		expected := filepath.Join(home, "Library", "Application Support")
+		if dataDir != expected {
+			t.Fatalf("expected %s, got %s", expected, dataDir)
+		}
+	case "windows":
+		expected, err := os.UserConfigDir()
+		if err != nil {
+			t.Fatal(err)
+		}
 		if dataDir != expected {
 			t.Fatalf("expected %s, got %s", expected, dataDir)
 		}
@@ -1384,9 +1397,17 @@ func TestScanCorpusLearn(t *testing.T) {
 		t.Fatal("expected learn to populate expected_rules, but got 0")
 	}
 
-	// Every detected rule should now be in expected_rules
+	// Every detected rule attributable to this artifact should now be in
+	// expected_rules. learnExpectedRules records a rule against an artifact by
+	// mapping the finding's path back to the artifact directory, so a
+	// repo-level correlation finding (COR-, DRIFT-) belongs to no single
+	// artifact and is never learned. Asserting over those made the outcome
+	// depend on which correlations the host happened to trigger.
 	detectedRules := make(map[string]struct{})
 	for _, f := range result.Report.Findings {
+		if strings.HasPrefix(f.RuleID, "COR-") || strings.HasPrefix(f.RuleID, "DRIFT-") {
+			continue
+		}
 		detectedRules[f.RuleID] = struct{}{}
 	}
 	expectedSet := make(map[string]struct{})
@@ -1463,8 +1484,9 @@ func TestComputeDeltasMissingExpected(t *testing.T) {
 			ExpectedRules: []string{"RULE-A", "RULE-B"},
 		},
 	}
-	report := newMockReport("art1", []string{"RULE-A", "RULE-C"}, "/tmp/scan")
-	deltas := computeDeltas(report, artifacts, "/tmp/scan")
+	root := t.TempDir()
+	report := newMockReport("art1", []string{"RULE-A", "RULE-C"}, root)
+	deltas := computeDeltas(report, artifacts, root)
 
 	if len(deltas) != 1 {
 		t.Fatalf("expected 1 delta, got %d", len(deltas))
@@ -1482,8 +1504,9 @@ func TestComputeDeltasNoExpectedRules(t *testing.T) {
 	artifacts := map[string]Artifact{
 		"art1": {ID: "art1", OriginalName: "SKILL.md"},
 	}
-	report := newMockReport("art1", []string{"RULE-X"}, "/tmp/scan")
-	deltas := computeDeltas(report, artifacts, "/tmp/scan")
+	root := t.TempDir()
+	report := newMockReport("art1", []string{"RULE-X"}, root)
+	deltas := computeDeltas(report, artifacts, root)
 	if len(deltas) != 0 {
 		t.Fatalf("expected 0 deltas for artifact without expected rules, got %d", len(deltas))
 	}

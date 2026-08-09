@@ -158,10 +158,20 @@ func gitCommitsForFindingFiles(parentCtx context.Context, repoRoot string, findi
 	return out, nil
 }
 
+// isRooted reports whether file begins with a path separator.
+//
+// filepath.IsAbs("/etc/passwd") is false on Windows, because an absolute path
+// there carries a volume. Without this check a rooted path falls to the Join
+// branch below, lands inside repoRoot, and passes containment — so a path the
+// caller meant as absolute is silently accepted as repo-relative.
+func isRooted(file string) bool {
+	return len(file) > 0 && (file[0] == '/' || file[0] == '\\')
+}
+
 func filePathRelativeToRepo(repoRoot, file string) (string, bool) {
 	repoRoot = filepath.Clean(repoRoot)
 	var abs string
-	if filepath.IsAbs(file) {
+	if filepath.IsAbs(file) || isRooted(file) {
 		abs = filepath.Clean(file)
 	} else {
 		abs = filepath.Clean(filepath.Join(repoRoot, file))

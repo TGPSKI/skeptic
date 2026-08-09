@@ -3,6 +3,7 @@ package report
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -27,8 +28,12 @@ func TestWriteFileAtomicCreatesFileAndParents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("stat: %v", err)
 	}
-	if perm := info.Mode().Perm(); perm != 0o644 {
-		t.Errorf("mode = %o, want 644", perm)
+	// Windows synthesizes FileMode from the read-only attribute alone, so a
+	// writable file always reports 0666 regardless of the mode passed in.
+	if runtime.GOOS != "windows" {
+		if perm := info.Mode().Perm(); perm != 0o644 {
+			t.Errorf("mode = %o, want 644", perm)
+		}
 	}
 }
 
@@ -91,6 +96,14 @@ func TestWriteFileAtomicFailureKeepsExistingFile(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(readOnly, 0o700) })
 
+	// os.Chmod on Windows toggles only the read-only attribute, and that
+	// attribute does not apply to directories — a 0500 directory still accepts
+	// new files. There is no stdlib way to deny directory writes, so the
+	// failure path is exercised on Unix only. The atomic-write logic under test
+	// is platform independent.
+	if runtime.GOOS == "windows" {
+		t.Skip("cannot make a directory non-writable on Windows without ACL APIs")
+	}
 	if os.Geteuid() == 0 {
 		t.Skip("running as root: directory permissions do not deny writes")
 	}
