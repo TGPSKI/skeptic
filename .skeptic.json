@@ -1,0 +1,8 @@
+{
+  "preset": "ci",
+  "mode": "developer",
+  "fail-on": "high",
+  "scan-style": "hybrid",
+  "ignore-paths": "testdata/**,rulepacks/campaigns/**,internal/rules/**,internal/checks/**,**/*_test.go,.agents/plans/**",
+  "waivers": ".skeptic-waivers.json"
+}
