@@ -16,7 +16,7 @@
         "required_status_checks": [
           { "context": "test (ubuntu-latest)" },
           { "context": "test (macos-latest)" },
-          { "context": "test-action" }
+          { "context": "test-action-result" }
         ]
       }
     },
