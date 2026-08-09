@@ -2,6 +2,14 @@
 
 ## v0.3.0 — unreleased
 
+### Security
+
+- Fix expression injection in `action.yml`: inputs were interpolated into the
+  `run:` body, so a quote in any input executed arbitrary commands on the runner.
+  Inputs now pass through `env:` and the command is built as a bash array (#56)
+- Pass expressions through `env:` in `release.yml` and
+  `action-integration-test.yml` (#56)
+
 ### Fixed
 
 - Gate `CLOUD-ID-` and `POL-GHA-` findings in developer mode. Both were

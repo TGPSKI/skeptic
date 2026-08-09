@@ -29,14 +29,16 @@ jobs:
         with:
           fetch-depth: 0
       - id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [ "${EVENT_NAME}" = "push" ]; then
             echo "action=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          CHANGED=$(git diff --name-only "$BASE"..."$HEAD")
+          CHANGED=$(git diff --name-only "${BASE_SHA}"..."${HEAD_SHA}")
           if echo "$CHANGED" | grep -qE '^(action\.yml|cmd/|internal/|\.github/workflows/action-integration-test\.yml)'; then
             echo "action=true" >> "$GITHUB_OUTPUT"
           else
@@ -61,9 +63,11 @@ jobs:
 
       - name: Verify advisory scan passed
         shell: bash
+        env:
+          EXIT_CODE: ${{ steps.advisory-scan.outputs.exit-code }}
         run: |
-          if [ "${{ steps.advisory-scan.outputs.exit-code }}" != "0" ]; then
-            echo "::error::Expected exit code 0 for advisory scan, got ${{ steps.advisory-scan.outputs.exit-code }}"
+          if [ "${EXIT_CODE}" != "0" ]; then
+            echo "::error::Expected exit code 0 for advisory scan, got ${EXIT_CODE}"
             exit 1
           fi
 
@@ -79,16 +83,19 @@ jobs:
 
       - name: Verify gated scan triggered policy failure
         shell: bash
+        env:
+          EXIT_CODE: ${{ steps.gated-scan.outputs.exit-code }}
         run: |
-          if [ "${{ steps.gated-scan.outputs.exit-code }}" != "3" ]; then
-            echo "::error::Expected exit code 3 for gated scan, got ${{ steps.gated-scan.outputs.exit-code }}"
+          if [ "${EXIT_CODE}" != "3" ]; then
+            echo "::error::Expected exit code 3 for gated scan, got ${EXIT_CODE}"
             exit 1
           fi
 
       - name: Verify JSON result file exists
         shell: bash
+        env:
+          RESULT: ${{ steps.gated-scan.outputs.result-file }}
         run: |
-          RESULT="${{ steps.gated-scan.outputs.result-file }}"
           if [ ! -f "${RESULT}" ]; then
             echo "::error::Result file not found: ${RESULT}"
             exit 1
@@ -109,11 +116,43 @@ jobs:
 
       - name: Verify clean scan passed
         shell: bash
+        env:
+          EXIT_CODE: ${{ steps.clean-scan.outputs.exit-code }}
         run: |
-          if [ "${{ steps.clean-scan.outputs.exit-code }}" != "0" ]; then
-            echo "::error::Expected exit code 0 for clean scan, got ${{ steps.clean-scan.outputs.exit-code }}"
+          if [ "${EXIT_CODE}" != "0" ]; then
+            echo "::error::Expected exit code 0 for clean scan, got ${EXIT_CODE}"
             exit 1
           fi
+
+      # Regression test for expression injection. Inputs were interpolated
+      # into the action's run: body, so a quote closed the surrounding string
+      # literal and the rest ran as shell. The payload must now reach skeptic
+      # as argv and be rejected as a bad flag.
+      - name: Hostile input must not execute (expression injection)
+        id: injection-scan
+        uses: ./
+        continue-on-error: true
+        with:
+          path: testdata/proof/clean-repo
+          fail-on: none
+          format: text
+          sarif-upload: 'false'
+          extra-args: '"; touch ${{ runner.temp }}/skeptic-injection-canary; echo "'
+
+      - name: Verify no command executed and the flag was rejected
+        shell: bash
+        env:
+          EXIT_CODE: ${{ steps.injection-scan.outputs.exit-code }}
+        run: |
+          if [ -e "${RUNNER_TEMP}/skeptic-injection-canary" ]; then
+            echo "::error::Expression injection executed a command on the runner"
+            exit 1
+          fi
+          if [ "${EXIT_CODE}" = "0" ]; then
+            echo "::error::Expected skeptic to reject the injected argument, got exit code 0"
+            exit 1
+          fi
+          echo "Injection blocked; skeptic rejected the argument with exit code ${EXIT_CODE}"
 
   test-action-result:
     if: always()
