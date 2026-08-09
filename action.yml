@@ -60,7 +60,7 @@ inputs:
     required: false
     default: ''
   go-version:
-    description: Go version for building skeptic
+    description: Go version for the source-build fallback. Unused when a prebuilt release binary is downloaded, which is the case for any version tag.
     required: false
     default: '1.24'
   sarif-upload:
@@ -82,6 +82,9 @@ outputs:
   result-file:
     description: Path to the results file (any format)
     value: ${{ steps.scan.outputs.result-file }}
+  run-id:
+    description: Per-invocation suffix. Disambiguates the results artifact when the action runs more than once in a job.
+    value: ${{ steps.scan.outputs.run-id }}
 
 runs:
   using: composite
@@ -273,6 +276,7 @@ runs:
 
         echo "exit-code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
         echo "result-file=${RESULT_FILE}" >> "${GITHUB_OUTPUT}"
+        echo "run-id=${SUFFIX}" >> "${GITHUB_OUTPUT}"
         if [ "${INPUT_FORMAT}" = "sarif" ]; then
           echo "sarif-file=${RESULT_FILE}" >> "${GITHUB_OUTPUT}"
         fi
@@ -297,7 +301,10 @@ runs:
       if: always() && steps.scan.outputs.result-file != ''
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
-        name: skeptic-results-${{ inputs.format }}-${{ inputs.fail-on }}
+        # The scan step already stamps RESULT_FILE with a per-invocation
+        # suffix; the artifact name needs the same, or two invocations in one
+        # job with the same format and gate collide.
+        name: skeptic-results-${{ inputs.format }}-${{ inputs.fail-on }}-${{ steps.scan.outputs.run-id }}
         path: ${{ steps.scan.outputs.result-file }}
         retention-days: 30
 
