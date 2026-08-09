@@ -108,6 +108,38 @@ jobs:
           make build
           make test-race
 
+      - name: Build release archives
+        id: dist
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          mkdir -p dist
+          COMMIT="$(git rev-parse --short HEAD)"
+          DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          GOVERS="$(go version | awk '{print $3}')"
+          LDFLAGS="-s -w -X main.buildCommit=${COMMIT} -X main.buildDate=${DATE} -X main.buildGoVersion=${GOVERS}"
+
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; do
+            GOOS="${target%/*}"; GOARCH="${target#*/}"
+            BIN="skeptic"; [ "$GOOS" = "windows" ] && BIN="skeptic.exe"
+            STAGE="dist/skeptic_${NEXT}_${GOOS}_${GOARCH}"
+            mkdir -p "$STAGE"
+            CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" \
+              go build -trimpath -ldflags "${LDFLAGS}" -o "${STAGE}/${BIN}" ./cmd/skeptic
+            cp LICENSE README.md "$STAGE/"
+            if [ "$GOOS" = "windows" ]; then
+              (cd dist && zip -qr "$(basename "$STAGE").zip" "$(basename "$STAGE")")
+            else
+              tar -czf "${STAGE}.tar.gz" -C dist "$(basename "$STAGE")"
+            fi
+            rm -rf "$STAGE"
+          done
+
+          (cd dist && sha256sum ./*.tar.gz ./*.zip | sed 's|\./||' > checksums.txt)
+          echo "Built archives:"
+          ls -1 dist
+          cat dist/checksums.txt
+
       - name: Extract changelog for release notes
         id: notes
         env:
@@ -136,11 +168,29 @@ jobs:
           gh release create "$NEXT" \
             --title "$NEXT" \
             --notes "$RELEASE_NOTES" \
-            --verify-tag
+            --verify-tag \
+            dist/*.tar.gz dist/*.zip dist/checksums.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEXT: ${{ steps.version.outputs.next }}
           RELEASE_NOTES: ${{ steps.notes.outputs.body }}
+
+      # The GitHub Action is consumed as TGPSKI/skeptic@v0, so the major tag has
+      # to move to each release. The minor tag gives consumers a narrower pin.
+      - name: Move major and minor tags
+        if: ${{ !inputs.dry_run }}
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          MAJOR="${NEXT%%.*}"
+          MINOR="${NEXT%.*}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for tag in "$MAJOR" "$MINOR"; do
+            git tag -fa "$tag" -m "$tag -> $NEXT"
+            git push --force origin "$tag"
+            echo "moved $tag -> $NEXT"
+          done
 
       - name: Trigger Go module proxy indexing
         if: ${{ !inputs.dry_run }}

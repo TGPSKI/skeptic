@@ -86,13 +86,105 @@ outputs:
 runs:
   using: composite
   steps:
+    # A release binary avoids installing Go and compiling on every job. It is
+    # only attempted when the action is pinned to a version tag, because that is
+    # the only case where a matching release exists. Any failure — unresolvable
+    # version, missing asset, checksum mismatch — falls through to the source
+    # build, so the action never breaks on a download problem.
+    - name: Download release binary
+      id: download
+      shell: bash
+      env:
+        ACTION_REF: ${{ github.action_ref }}
+        ACTION_REPO: ${{ github.action_repository }}
+        ACTION_PATH: ${{ github.action_path }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -uo pipefail
+
+        # Written exactly once, on every path, so the result never depends on
+        # how duplicate GITHUB_OUTPUT keys are resolved.
+        bail() { echo "found=false" >> "${GITHUB_OUTPUT}"; echo "$1"; exit 0; }
+
+        REPO="${ACTION_REPO:-TGPSKI/skeptic}"
+        case "${ACTION_REF:-}" in
+          v[0-9]*.[0-9]*.[0-9]*) VERSION="${ACTION_REF}" ;;
+          v[0-9]*)
+            # Moving tag such as v0 or v0.3: resolve to the newest release that
+            # sits under it, so v0 does not follow a future v1.
+            VERSION="$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${REPO}/releases?per_page=100" 2>/dev/null \
+              | grep -o '"tag_name": *"[^"]*"' | sed 's/.*"\([^"]*\)"$/\1/' \
+              | grep -E "^${ACTION_REF}(\.|$)" | head -1)"
+            ;;
+          *) VERSION="" ;;
+        esac
+
+        if [ -z "${VERSION}" ]; then
+          bail "no release version resolved from ref '${ACTION_REF:-}'; building from source"
+        fi
+
+        case "${RUNNER_OS}" in
+          Linux)   OS="linux" ;;
+          macOS)   OS="darwin" ;;
+          Windows) OS="windows" ;;
+          *) bail "unsupported runner OS ${RUNNER_OS}; building from source" ;;
+        esac
+        case "${RUNNER_ARCH}" in
+          X64)   ARCH="amd64" ;;
+          ARM64) ARCH="arm64" ;;
+          *) bail "unsupported runner arch ${RUNNER_ARCH}; building from source" ;;
+        esac
+
+        EXT="tar.gz"; [ "${OS}" = "windows" ] && EXT="zip"
+        NAME="skeptic_${VERSION}_${OS}_${ARCH}.${EXT}"
+        BASE="https://github.com/${REPO}/releases/download/${VERSION}"
+        TMP="$(mktemp -d)"
+
+        if ! curl -fsSL -o "${TMP}/${NAME}" "${BASE}/${NAME}" \
+          || ! curl -fsSL -o "${TMP}/checksums.txt" "${BASE}/checksums.txt"; then
+          bail "::warning::could not download ${NAME}; building from source"
+        fi
+
+        # Verify before extracting, never after.
+        WANT="$(grep " ${NAME}\$" "${TMP}/checksums.txt" | awk '{print $1}')"
+        if [ -z "${WANT}" ]; then
+          bail "::warning::${NAME} absent from checksums.txt; building from source"
+        fi
+        if command -v sha256sum >/dev/null 2>&1; then
+          GOT="$(sha256sum "${TMP}/${NAME}" | awk '{print $1}')"
+        else
+          GOT="$(shasum -a 256 "${TMP}/${NAME}" | awk '{print $1}')"
+        fi
+        if [ "${WANT}" != "${GOT}" ]; then
+          echo "::error::checksum mismatch for ${NAME}: expected ${WANT}, got ${GOT}"
+          exit 1
+        fi
+
+        mkdir -p "${ACTION_PATH}/bin"
+        if [ "${EXT}" = "zip" ]; then
+          unzip -qo "${TMP}/${NAME}" -d "${TMP}/x"
+        else
+          mkdir -p "${TMP}/x" && tar -xzf "${TMP}/${NAME}" -C "${TMP}/x"
+        fi
+        BIN="$(find "${TMP}/x" -type f -name 'skeptic' -o -type f -name 'skeptic.exe' | head -1)"
+        if [ -z "${BIN}" ]; then
+          bail "::warning::no skeptic binary in ${NAME}; building from source"
+        fi
+        cp "${BIN}" "${ACTION_PATH}/bin/$(basename "${BIN}")"
+        chmod +x "${ACTION_PATH}/bin/$(basename "${BIN}")"
+        echo "found=true" >> "${GITHUB_OUTPUT}"
+        echo "using released skeptic ${VERSION} (${OS}/${ARCH}), checksum verified"
+
     - name: Setup Go
+      if: steps.download.outputs.found != 'true'
       uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
       with:
         go-version: ${{ inputs.go-version }}
         cache: true
 
     - name: Build skeptic
+      if: steps.download.outputs.found != 'true'
       shell: bash
       working-directory: ${{ github.action_path }}
       run: |
@@ -110,7 +202,7 @@ runs:
       # ${{ }} before bash sees the text, so an inline ${{ inputs.X }} lets a
       # quote in any input execute commands on the runner.
       env:
-        SKEPTIC_BIN: ${{ github.action_path }}/bin/skeptic
+        ACTION_BIN_DIR: ${{ github.action_path }}/bin
         INPUT_PATH: ${{ inputs.path }}
         INPUT_FORMAT: ${{ inputs.format }}
         INPUT_MODE: ${{ inputs.mode }}
@@ -127,6 +219,9 @@ runs:
         INPUT_EXTRA_ARGS: ${{ inputs.extra-args }}
       run: |
         set -uo pipefail
+
+        SKEPTIC_BIN="${ACTION_BIN_DIR}/skeptic"
+        [ -x "${SKEPTIC_BIN}" ] || SKEPTIC_BIN="${ACTION_BIN_DIR}/skeptic.exe"
 
         SUFFIX="$(date +%s)-$$"
         case "${INPUT_FORMAT}" in

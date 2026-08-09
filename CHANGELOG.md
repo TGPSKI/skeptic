@@ -33,6 +33,14 @@
 
 ### Added
 
+- Publish release archives for `linux/{amd64,arm64}`, `darwin/{amd64,arm64}`,
+  and `windows/amd64`, plus `checksums.txt` (#59)
+- Move the `vX` and `vX.Y` tags to each release. `v0` is what
+  `TGPSKI/skeptic@v0` resolves to (#59)
+- The GitHub Action downloads a checksum-verified release binary when pinned to
+  a version tag, and installs no Go toolchain. It falls back to a source build
+  for a branch, a commit SHA, or a local `uses: ./`. A checksum mismatch fails
+  the step (#59)
 - Warn on a passing run when findings at or above `--fail-on` were excluded by
   gate eligibility, naming the rule IDs (#55)
 - `model.RuleFamilies()` and `model.GateSuppressedRuleIDs()` (#55)
@@ -44,6 +52,10 @@
 
 ### Documentation
 
+- Replace the `yourorg/skeptic` placeholder in `docs/GITHUB_ACTION.md` with
+  `TGPSKI/skeptic@v0`, and state that the caller must check out the code — the
+  action does not (#2)
+- Document the release tag and artifact scheme in `CONTRIBUTING.md` (#59)
 - Fix the README key-flags table. Unescaped `|` inside enum values split the
   cells, truncating six rows after their first value (#58)
 - Point the "Binary + completions" install at `make install-completions`.

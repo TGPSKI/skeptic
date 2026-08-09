@@ -101,13 +101,14 @@ skeptic corpus scan --learn          # scan the corpus and learn the expected ru
 Add skeptic to any workflow:
 
 ```yaml
-- uses: TGPSKI/skeptic@v1
+- uses: actions/checkout@v5
+- uses: TGPSKI/skeptic@v0
 ```
 
-This builds skeptic from source, scans with `--preset ci --format sarif --fail-on high`, uploads findings to GitHub code scanning, and fails the step on policy violation. No container, no external dependencies.
+The action scans the workspace, so check out your code first. It downloads a checksum-verified release binary, scans with `--preset ci --format sarif --fail-on high`, uploads findings to GitHub code scanning, and fails the step on policy violation. No container, no Go toolchain.
 
 ```yaml
-- uses: TGPSKI/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     scan-style: hybrid
     threat-mode: machine-identity
