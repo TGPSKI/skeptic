@@ -106,60 +106,75 @@ runs:
     - name: Run skeptic scan
       id: scan
       shell: bash
+      # Inputs pass through env, never into the script body. GitHub expands
+      # ${{ }} before bash sees the text, so an inline ${{ inputs.X }} lets a
+      # quote in any input execute commands on the runner.
+      env:
+        SKEPTIC_BIN: ${{ github.action_path }}/bin/skeptic
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_PRESET: ${{ inputs.preset }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_FAIL_ON_SCORE: ${{ inputs.fail-on-score }}
+        INPUT_SCAN_STYLE: ${{ inputs.scan-style }}
+        INPUT_THREAT_MODE: ${{ inputs.threat-mode }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_RULES_FILE: ${{ inputs.rules-file }}
+        INPUT_RULES_PUBKEY: ${{ inputs.rules-pubkey }}
+        INPUT_BASELINE: ${{ inputs.baseline }}
+        INPUT_WAIVERS: ${{ inputs.waivers }}
+        INPUT_EXTRA_ARGS: ${{ inputs.extra-args }}
       run: |
-        SKEPTIC="${{ github.action_path }}/bin/skeptic"
+        set -uo pipefail
 
         SUFFIX="$(date +%s)-$$"
-        RESULT_FILE="${RUNNER_TEMP}/skeptic-results-${SUFFIX}"
-        if [ "${{ inputs.format }}" = "sarif" ]; then
-          RESULT_FILE="${RESULT_FILE}.sarif"
-        elif [ "${{ inputs.format }}" = "json" ]; then
-          RESULT_FILE="${RESULT_FILE}.json"
-        elif [ "${{ inputs.format }}" = "markdown" ]; then
-          RESULT_FILE="${RESULT_FILE}.md"
-        else
-          RESULT_FILE="${RESULT_FILE}.txt"
-        fi
+        case "${INPUT_FORMAT}" in
+          sarif)    EXT="sarif" ;;
+          json)     EXT="json" ;;
+          markdown) EXT="md" ;;
+          *)        EXT="txt" ;;
+        esac
+        RESULT_FILE="${RUNNER_TEMP}/skeptic-results-${SUFFIX}.${EXT}"
 
-        ARGS="scan"
-        ARGS="${ARGS} --path ${{ inputs.path }}"
-        ARGS="${ARGS} --format ${{ inputs.format }}"
-        ARGS="${ARGS} --mode ${{ inputs.mode }}"
-        ARGS="${ARGS} --preset ${{ inputs.preset }}"
-        ARGS="${ARGS} --fail-on ${{ inputs.fail-on }}"
-        ARGS="${ARGS} --fail-on-score ${{ inputs.fail-on-score }}"
-        ARGS="${ARGS} --scan-style ${{ inputs.scan-style }}"
-        ARGS="${ARGS} --threat-mode ${{ inputs.threat-mode }}"
+        # An array, not a string: each element stays one argv entry.
+        ARGS=(
+          scan
+          --path "${INPUT_PATH}"
+          --format "${INPUT_FORMAT}"
+          --mode "${INPUT_MODE}"
+          --preset "${INPUT_PRESET}"
+          --fail-on "${INPUT_FAIL_ON}"
+          --fail-on-score "${INPUT_FAIL_ON_SCORE}"
+          --scan-style "${INPUT_SCAN_STYLE}"
+          --threat-mode "${INPUT_THREAT_MODE}"
+        )
 
-        if [ -n "${{ inputs.config }}" ]; then
-          ARGS="${ARGS} --config ${{ inputs.config }}"
-        fi
-        if [ -n "${{ inputs.rules-file }}" ]; then
-          ARGS="${ARGS} --rules-file ${{ inputs.rules-file }}"
-        fi
-        if [ -n "${{ inputs.rules-pubkey }}" ]; then
-          ARGS="${ARGS} --rules-pubkey ${{ inputs.rules-pubkey }}"
-        fi
-        if [ -n "${{ inputs.baseline }}" ]; then
-          ARGS="${ARGS} --baseline ${{ inputs.baseline }}"
-        fi
-        if [ -n "${{ inputs.waivers }}" ]; then
-          ARGS="${ARGS} --waivers ${{ inputs.waivers }}"
-        fi
-        if [ -n "${{ inputs.extra-args }}" ]; then
-          ARGS="${ARGS} ${{ inputs.extra-args }}"
+        # `cond && ARGS+=(...)` would abort the step under the runner's default
+        # `bash -e` whenever the condition is false, so these stay if-blocks.
+        if [ -n "${INPUT_CONFIG}" ]; then       ARGS+=(--config "${INPUT_CONFIG}"); fi
+        if [ -n "${INPUT_RULES_FILE}" ]; then   ARGS+=(--rules-file "${INPUT_RULES_FILE}"); fi
+        if [ -n "${INPUT_RULES_PUBKEY}" ]; then ARGS+=(--rules-pubkey "${INPUT_RULES_PUBKEY}"); fi
+        if [ -n "${INPUT_BASELINE}" ]; then     ARGS+=(--baseline "${INPUT_BASELINE}"); fi
+        if [ -n "${INPUT_WAIVERS}" ]; then      ARGS+=(--waivers "${INPUT_WAIVERS}"); fi
+
+        # extra-args is a flag list, so it is word-split. The split happens
+        # after GitHub expansion, so it yields arguments, not shell syntax.
+        if [ -n "${INPUT_EXTRA_ARGS}" ]; then
+          read -r -a EXTRA <<< "${INPUT_EXTRA_ARGS}"
+          ARGS+=("${EXTRA[@]}")
         fi
 
         LOG_FILE="${RUNNER_TEMP}/skeptic-stderr-${SUFFIX}.log"
         EXIT_CODE=0
-        ${SKEPTIC} ${ARGS} > "${RESULT_FILE}" 2>"${LOG_FILE}" || EXIT_CODE=$?
+        "${SKEPTIC_BIN}" "${ARGS[@]}" > "${RESULT_FILE}" 2>"${LOG_FILE}" || EXIT_CODE=$?
         if [ -s "${LOG_FILE}" ]; then
           cat "${LOG_FILE}" >&2
         fi
 
         echo "exit-code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
         echo "result-file=${RESULT_FILE}" >> "${GITHUB_OUTPUT}"
-        if [ "${{ inputs.format }}" = "sarif" ]; then
+        if [ "${INPUT_FORMAT}" = "sarif" ]; then
           echo "sarif-file=${RESULT_FILE}" >> "${GITHUB_OUTPUT}"
         fi
 
