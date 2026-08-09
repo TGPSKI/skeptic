@@ -92,7 +92,7 @@
       "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
       "author": "TGPSKI",
       "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "70b90de9fdce7a846f6c39a95bf5b730f0e0d30ab4c151591df9922a7983386b"
+      "file_sha256": "73aa152b8da754f5166b70528ff73d98be5b8058299e4017b7873c0928841f05"
     },
     {
       "rule_id": "CI-PRT-001",

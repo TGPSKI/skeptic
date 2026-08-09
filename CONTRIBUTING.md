@@ -170,6 +170,22 @@ To apply a file to the server:
 gh api -X PUT repos/TGPSKI/skeptic/rulesets/<id> --input .github/ruleset-main.json
 ```
 
+## Scan waivers
+
+`.skeptic-waivers.json` pins each waiver to its file's SHA256, so a waiver stops
+applying as soon as the file changes. **Editing a waived file fails CI until the
+pin is refreshed.** That is the mechanism, not a bug: it forces a second look at
+content that was reviewed once.
+
+```bash
+make waivers-check     # fail if any pin is stale
+make waivers-refresh   # re-pin, printing what each waiver will suppress again
+```
+
+`waivers-refresh` prints the findings it is about to re-suppress. Read them.
+Re-pinning without looking turns a waiver back into an ignore rule, which is
+the thing the pin exists to avoid.
+
 ## Releases
 
 Releases are cut by `.github/workflows/release.yml` via manual dispatch. The
