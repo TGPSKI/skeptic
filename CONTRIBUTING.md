@@ -173,3 +173,20 @@ falling back to a source build.
 
 Adding a platform means adding it to the matrix in the `Build release archives`
 step and to the OS/arch mapping in `action.yml`.
+
+### Provenance
+
+From v0.3.1 onward the release workflow attests every archive and
+`checksums.txt` with `actions/attest-build-provenance`. Verify one with:
+
+```bash
+gh attestation verify skeptic_vX.Y.Z_linux_amd64.tar.gz --repo TGPSKI/skeptic
+```
+
+`checksums.txt` establishes that an archive is the one this repository built.
+The attestation establishes that `checksums.txt` itself came from `release.yml`
+running in this repository, which a checksum file alone cannot.
+
+Attestation runs before the release is published, so a failure produces no
+release. A dry run skips it — an attestation is a permanent public record, and
+archives that are never published should not have one.
