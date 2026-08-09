@@ -1,14 +1,14 @@
 # Architecture
 
-Last updated: 2026-04-05  
-Dependency graph verified: 2026-04-05
+Last updated: 2026-08-09  
+Dependency graph verified: 2026-08-09
 
 ## Module Layout
 
-`skeptic` is a single Go module (`module skeptic`) at the repository root. It builds as one binary from `cmd/skeptic/` and keeps all domain logic in `internal/` packages.
+`skeptic` is a single Go module (`github.com/TGPSKI/skeptic`) at the repository root. It builds as one binary from `cmd/skeptic/` and keeps all domain logic in `internal/` packages.
 
 ```text
-go.mod                          # module skeptic, stdlib-only
+go.mod                          # module github.com/TGPSKI/skeptic, stdlib-only
 rulepacks/                      # curated external rule packs; signing material under rulepacks/signing/; campaign packs under rulepacks/campaigns/<name>/ (rules JSON + .sig); see rulepacks/README.md
 cmd/skeptic/
   main.go                       # CLI entry, subcommand dispatch, global flag extraction
@@ -54,7 +54,7 @@ Built-in rules are split across themed files under `internal/rules/`. The packag
 |------|-------|------|
 | `rules_behavioral_signals.go` | 82 | Encoded payload, obfuscation, CI abuse, container escape, structural exfil/memory/sweep/stego signals (`CI-EXFIL-*`, `ATK-MEM-*`, `ATK-SWEEP-*`, `ENC-STEGO-*`, …), and related behavioral patterns |
 | `rules_agentic_surfaces.go` | 67 | Agentic/LLM poisoning surfaces, MCP abuse patterns, trust-laundering (`AGT-TRUST-001`–`018`, including “nobody reviews this” surfaces), memory poisoning, tool-output injection |
-| `rules_non_code_surfaces.go` | 26 | Non-code attack surfaces: git metadata, package-manager config, IDE/devcontainer vectors, plus structural CI/SCM workflow signals (`CI-PRT-*`, `SCM-TAG-*`) |
+| `rules_non_code_surfaces.go` | 28 | Non-code attack surfaces: git metadata, package-manager config, IDE/devcontainer vectors, plus structural CI/SCM workflow signals (`CI-PRT-*`, `SCM-TAG-*`) |
 | `rules_identity_exposure.go` | 7 | IaC and machine-identity policy risk signals |
 | `rules_attack_tactics.go` | 45 | ATT&CK tactic coverage heuristics (`ATK-K8S-*`, `ATK-PER-*`, `ATK-IMDS-*`, `ATK-C2-*`, `ATK-WIPER-*`, …) |
 

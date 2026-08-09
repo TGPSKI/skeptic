@@ -3,7 +3,7 @@ PKG := ./cmd/skeptic
 BIN_DIR := bin
 BIN := $(BIN_DIR)/skeptic
 
-.PHONY: help fmt check test test-race integration integration-fast integration-full integration-scale integration-perf ci coverage coverage-check lint build install install-completions uninstall run scan sarif ingest sign-rulepack gen-rule-keypair serve mcp init version validate-rules validate-rulepacks bench bench-save bench-compare start stop clean profile profile-cpu profile-mem profile-trace perf-debug
+.PHONY: help fmt check test test-race integration integration-fast integration-full integration-scale integration-perf ci coverage coverage-check lint build install install-completions uninstall run scan sarif ingest sign-rulepack gen-rule-keypair serve mcp init version validate-rules validate-rulepacks bench bench-save bench-compare clean profile profile-cpu profile-mem profile-trace perf-debug
 
 help:
 	@echo "Targets:"
@@ -42,8 +42,6 @@ help:
 	@echo "  make profile-mem - Open mem.prof in pprof interactive mode"
 	@echo "  make profile-trace - Open trace.out in go tool trace"
 	@echo "  make perf-debug  - Run scan with --perf-debug on current directory"
-	@echo "  make start    - Start local daemon (background)"
-	@echo "  make stop     - Stop local daemon using PID file"
 	@echo "  make serve    - Run local daemon scheduler"
 	@echo "  make mcp      - Run local MCP stdio server"
 	@echo "  make clean    - Remove built artifacts"
@@ -196,12 +194,6 @@ profile-mem:
 
 profile-trace:
 	$(GOCMD) tool trace trace.out
-
-start:
-	command ./scripts/start
-
-stop:
-	command ./scripts/stop
 
 serve:
 	$(GOCMD) run $(PKG) serve --scan-interval 5m

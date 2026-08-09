@@ -33,6 +33,23 @@
   gate eligibility, naming the rule IDs (#55)
 - `model.RuleFamilies()` and `model.GateSuppressedRuleIDs()` (#55)
 
+### Removed
+
+- `make start` and `make stop`. Both invoked `./scripts/start` and
+  `./scripts/stop`, which do not exist in the tree (#5)
+
+### Documentation
+
+- Fix the README key-flags table. Unescaped `|` inside enum values split the
+  cells, truncating six rows after their first value (#58)
+- Point the "Binary + completions" install at `make install-completions`.
+  `make install` installs the binary only (#58)
+- Fix two TOC anchors: `#design` and `#rule-ingestion-and-rule-packs` (#6)
+- Correct `ScanStyle` and `ThreatMode` value lists in `AGENTS.md`. Three of the
+  five documented `ThreatMode` values were rejected by the CLI (#60)
+- Correct the module path, the `rules_non_code_surfaces.go` rule count, and the
+  verification date in `docs/ARCHITECTURE.md` (#60)
+
 ## v0.2.1 — 2026-05-19
 
 ### Documentation
