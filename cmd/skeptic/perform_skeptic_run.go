@@ -157,6 +157,7 @@ func enrichReportFindings(report *model.Report, raw *runRawOptions, roots []stri
 		PolicyChecks:                    raw.PolicyChecks,
 		IdentityGraphHops:               raw.IdentityGraphHops,
 		RedactSecrets:                   raw.RedactSecrets,
+		IgnorePaths:                     rules.SplitCSV(raw.IgnorePathsRaw),
 		ProvenanceManifestPath:          raw.ProvenanceManifestPath,
 		RequireSignedProvenanceManifest: raw.RequireSignedProvenanceManifest,
 		SBOMPath:                        raw.SBOMPath,

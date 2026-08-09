@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/TGPSKI/skeptic/internal/model"
+	"github.com/TGPSKI/skeptic/internal/pathfilter"
 	"github.com/TGPSKI/skeptic/internal/security"
 )
 
@@ -69,89 +70,10 @@ var envFilePattern = regexp.MustCompile(
 var binaryMetadataPattern = regexp.MustCompile(`(?i)(\.DS_Store|Thumbs\.db)$`)
 var textMetadataPattern = regexp.MustCompile(`(?i)(desktop\.ini)$`)
 
-// matchesIgnorePath reports whether relPath should be skipped (file or directory under a scan root).
-// Patterns support filepath.Match globs, optional ** segments, basename-only matches, and
-// simple path prefixes (e.g. "vendor/").
+// matchesIgnorePath delegates to pathfilter so this walker and the
+// identity-graph walker in internal/checks share one definition of "ignored".
 func matchesIgnorePath(relPath string, patterns []string) bool {
-	relPath = filepath.ToSlash(relPath)
-	base := filepath.Base(relPath)
-	for _, raw := range patterns {
-		pattern := filepath.ToSlash(strings.TrimSpace(raw))
-		if pattern == "" {
-			continue
-		}
-		if strings.Contains(pattern, "**") {
-			if pathMatchesIgnoreDoubleStar(relPath, pattern) {
-				return true
-			}
-			continue
-		}
-		matched, err := filepath.Match(pattern, relPath)
-		if err == nil && matched {
-			return true
-		}
-		matched, err = filepath.Match(pattern, base)
-		if err == nil && matched {
-			return true
-		}
-		if strings.HasPrefix(relPath, pattern) {
-			return true
-		}
-	}
-	return false
-}
-
-func pathMatchesIgnoreDoubleStar(path, pattern string) bool {
-	for strings.Contains(pattern, "**/**") {
-		pattern = strings.ReplaceAll(pattern, "**/**", "**")
-	}
-	if strings.HasPrefix(pattern, "**/") {
-		return pathMatchesFromAnySegment(path, pattern[3:])
-	}
-	if strings.HasSuffix(pattern, "/**") {
-		prefix := strings.TrimSuffix(pattern, "/**")
-		if prefix == "" {
-			return true
-		}
-		return path == prefix || strings.HasPrefix(path, prefix+"/")
-	}
-	idx := strings.Index(pattern, "**")
-	if idx < 0 {
-		return false
-	}
-	left := strings.Trim(pattern[:idx], "/")
-	right := strings.Trim(pattern[idx+2:], "/")
-	rest := path
-	if left != "" {
-		if path == left {
-			rest = ""
-		} else if strings.HasPrefix(path, left+"/") {
-			rest = path[len(left)+1:]
-		} else {
-			return false
-		}
-	}
-	if right == "" {
-		return true
-	}
-	return pathMatchesFromAnySegment(rest, right)
-}
-
-func pathMatchesFromAnySegment(path, suffix string) bool {
-	if suffix == "" {
-		return true
-	}
-	for {
-		matched, err := filepath.Match(suffix, path)
-		if err == nil && matched {
-			return true
-		}
-		i := strings.Index(path, "/")
-		if i < 0 {
-			return false
-		}
-		path = path[i+1:]
-	}
+	return pathfilter.Matches(relPath, patterns)
 }
 
 func walkDirEntry(

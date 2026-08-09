@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/TGPSKI/skeptic/internal/model"
+	"github.com/TGPSKI/skeptic/internal/pathfilter"
 	"github.com/TGPSKI/skeptic/internal/security"
 )
 
@@ -159,7 +160,12 @@ type GraphNode struct {
 }
 
 // RunIdentityGraphChecks scans IAM, RBAC, and OIDC configs for short paths to sensitive resources.
-func RunIdentityGraphChecks(scanRoots []string, maxHops int, redactSecrets bool) []model.Finding {
+//
+// ignorePaths carries the same --ignore-paths patterns internal/scan applies.
+// This walker is independent of that one, so without them a caller who excluded
+// a directory would still get GRAPH- findings from it, and those findings would
+// still count toward --fail-on.
+func RunIdentityGraphChecks(scanRoots []string, maxHops int, redactSecrets bool, ignorePaths []string) []model.Finding {
 	if maxHops <= 0 {
 		maxHops = defaultMaxIdentityHops
 	}
@@ -171,10 +177,24 @@ func RunIdentityGraphChecks(scanRoots []string, maxHops int, redactSecrets bool)
 			if err != nil {
 				return nil
 			}
+			// Findings report the path relative to the scan root, matching what
+			// internal/scan emits. Reporting the walked path put an absolute
+			// path in the finding, which no repo-relative ignore pattern could
+			// match and which leaked the scanning host's directory layout.
+			relPath, relErr := filepath.Rel(root, path)
+			if relErr != nil {
+				relPath = path
+			}
 			if d.IsDir() {
 				if d.Name() == "node_modules" || d.Name() == ".git" {
 					return filepath.SkipDir
 				}
+				if relPath != "." && pathfilter.Matches(relPath, ignorePaths) {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if pathfilter.Matches(relPath, ignorePaths) {
 				return nil
 			}
 			lower := strings.ToLower(d.Name())
@@ -194,21 +214,22 @@ func RunIdentityGraphChecks(scanRoots []string, maxHops int, redactSecrets bool)
 				return nil
 			}
 			content := string(data)
+			// Read through path, report through relPath.
 			if strings.HasSuffix(lower, ".yaml") || strings.HasSuffix(lower, ".yml") {
 				ents := extractK8sRBACEntities(content)
 				for i := range ents {
-					ents[i].SourceFile = path
+					ents[i].SourceFile = relPath
 				}
 				k8sRBACEntities = append(k8sRBACEntities, ents...)
 			}
-			if r, ok := collectIAMFileResult(path, content); ok {
+			if r, ok := collectIAMFileResult(relPath, content); ok {
 				iamCollected = append(iamCollected, r)
 			}
-			findings = append(findings, CheckIAMPolicy(path, content, maxHops, redactSecrets)...)
-			findings = append(findings, CheckOIDCFederation(path, content, redactSecrets)...)
+			findings = append(findings, CheckIAMPolicy(relPath, content, maxHops, redactSecrets)...)
+			findings = append(findings, CheckOIDCFederation(relPath, content, redactSecrets)...)
 			if strings.HasSuffix(lower, ".json") {
-				findings = append(findings, CheckAzureRoleAssignment(path, content, redactSecrets)...)
-				findings = append(findings, CheckGCPIAMBinding(path, content, redactSecrets)...)
+				findings = append(findings, CheckAzureRoleAssignment(relPath, content, redactSecrets)...)
+				findings = append(findings, CheckGCPIAMBinding(relPath, content, redactSecrets)...)
 			}
 			return nil
 		})
