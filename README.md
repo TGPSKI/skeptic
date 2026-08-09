@@ -167,6 +167,27 @@ The daemon binds to loopback with token authentication by default. See [docs/SER
 go install github.com/TGPSKI/skeptic/cmd/skeptic@latest
 ```
 
+### Release binary
+
+Archives for `linux/{amd64,arm64}`, `darwin/{amd64,arm64}`, and `windows/amd64`
+are attached to each [release](https://github.com/TGPSKI/skeptic/releases/latest).
+
+```bash
+VERSION=v0.3.1
+ARCHIVE="skeptic_${VERSION}_linux_amd64.tar.gz"
+
+gh release download "$VERSION" --repo TGPSKI/skeptic --pattern "$ARCHIVE" --pattern checksums.txt
+sha256sum --ignore-missing -c checksums.txt
+gh attestation verify "$ARCHIVE" --repo TGPSKI/skeptic
+
+tar -xzf "$ARCHIVE"
+sudo install -m 755 "skeptic_${VERSION}_linux_amd64/skeptic" /usr/local/bin/skeptic
+```
+
+`gh attestation verify` checks the Sigstore build provenance: the archive was
+produced by `release.yml` in this repository and has not been altered since.
+Archives from v0.3.1 onward carry an attestation.
+
 ### Binary + completions (recommended)
 
 ```bash
