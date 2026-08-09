@@ -5,10 +5,13 @@ Run skeptic as a GitHub Action to detect structural trust boundary vulnerabiliti
 ## Minimal usage
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: actions/checkout@v5
+- uses: TGPSKI/skeptic@v0
 ```
 
-This checks out your code, builds skeptic, scans with `--preset ci --format sarif --fail-on high`, uploads SARIF to GitHub code scanning, and fails the step on policy violation.
+The action scans the workspace, so **your workflow must check out the code first** — the action does not do it for you.
+
+It scans with `--preset ci --format sarif --fail-on high`, uploads SARIF to GitHub code scanning, and fails the step on policy violation.
 
 ## Full example
 
@@ -24,9 +27,9 @@ jobs:
   skeptic:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: yourorg/skeptic@v1
+      - uses: TGPSKI/skeptic@v0
         with:
           path: '.'
           format: sarif
@@ -52,7 +55,7 @@ jobs:
 | `rules-pubkey` | _(empty)_ | Ed25519 public key for rule pack signature verification |
 | `baseline` | _(empty)_ | Prior JSON report for diff-only gating |
 | `waivers` | _(empty)_ | JSON waiver file path |
-| `go-version` | `1.24` | Go version used to build skeptic |
+| `go-version` | `1.24` | Go version used only when building from source (see [How it works](#how-it-works)) |
 | `sarif-upload` | `true` | Auto-upload SARIF to GitHub code scanning |
 | `extra-args` | _(empty)_ | Additional CLI flags passed directly to `skeptic scan` |
 
@@ -82,7 +85,7 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
 ### Advisory mode (never fail)
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     fail-on: none
 ```
@@ -90,7 +93,7 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
 ### Diff-only with baseline
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     baseline: ./skeptic-baseline.json
     extra-args: '--diff-only'
@@ -99,7 +102,7 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
 ### Custom signed rule packs
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     rules-file: ./rulepacks/campaigns/custom.json
     rules-pubkey: ./rulepacks/signing/rulepack-signing.pub.pem
@@ -109,7 +112,7 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
 ### Machine-identity focused scan
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     threat-mode: machine-identity
     scan-style: hybrid
@@ -118,7 +121,7 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
 ### AI-workload focused scan
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     threat-mode: ai-workload
     scan-style: hybrid
@@ -127,7 +130,7 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
 ### JSON output without SARIF upload
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     format: json
     sarif-upload: 'false'
@@ -136,7 +139,7 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
 ### IR triage (show everything)
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     mode: ir
     scan-style: hybrid
@@ -146,7 +149,7 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
 ### Using with waivers
 
 ```yaml
-- uses: yourorg/skeptic@v1
+- uses: TGPSKI/skeptic@v0
   with:
     waivers: ./.skeptic-waivers.json
 ```
@@ -167,21 +170,29 @@ permissions:
 
 ## Ref pinning
 
-Pin the action to a full commit SHA for supply chain safety:
+`v0` is a moving tag that follows the latest `v0.x` release. It is the easiest ref to start with, and it is what the examples above use.
+
+For supply chain safety, pin to a full commit SHA instead:
 
 ```yaml
-- uses: yourorg/skeptic@abc123def456 # v1.0.0
+- uses: TGPSKI/skeptic@<40-char-sha> # v0.3.0
 ```
 
-skeptic itself detects mutable action refs (`POL-GHA-*` rules), so using a tag reference would trigger a finding in your own scan.
+skeptic detects mutable action refs itself (`SCM-TRUST-001`, `POL-GHA-001`), so a tag reference will show up as a finding when you scan your own repository.
+
+A SHA-pinned ref builds skeptic from source, because a commit SHA does not identify a release. Pin to an exact version tag (`@v0.3.0`) to get the prebuilt binary and a SHA-verified download.
 
 ## How it works
 
 The action is a composite action that:
 
-1. Sets up Go using `actions/setup-go`
-2. Builds skeptic from source (fast -- stdlib-only, no dependency download)
+1. Resolves the pinned ref to a release and downloads the matching prebuilt binary, verifying its SHA256 against the release `checksums.txt`
+2. Falls back to `actions/setup-go` plus a source build when no release matches the ref — a branch, a commit SHA, or a local `uses: ./`
 3. Runs `skeptic scan` with the configured inputs
 4. Uploads SARIF to GitHub code scanning (if enabled)
 5. Uploads the results file as a workflow artifact
 6. Fails the step on policy violation (exit code 3)
+
+A checksum mismatch fails the step. It does not fall back to a source build, because that would hide a tampered download.
+
+The download path skips the Go toolchain entirely. The source-build path is unchanged and needs no external dependencies — skeptic is stdlib-only.

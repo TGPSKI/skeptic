@@ -132,3 +132,44 @@ make validate-rules      # Rule pattern validation
 - Go formatting enforced via `make fmt`
 - Method-level documentation for non-obvious logic
 - Tests for every exported function and every rule pattern
+
+## Releases
+
+Releases are cut by `.github/workflows/release.yml` via manual dispatch. The
+workflow computes the next version from the latest `vX.Y.Z` tag, requires a
+matching `CHANGELOG.md` entry, builds the release archives, and publishes them.
+
+### Tags
+
+| Tag | Points at | Moved by |
+|---|---|---|
+| `vX.Y.Z` | one commit, permanently | created once per release |
+| `vX.Y` | newest release in that minor line | release workflow, force-updated |
+| `vX` | newest release in that major line | release workflow, force-updated |
+
+`vX` exists because the GitHub Action is consumed as `TGPSKI/skeptic@v0`. Moving
+it is what makes that ref pick up new releases.
+
+Consumers who want an immutable ref should pin a commit SHA. skeptic reports
+mutable action refs as findings (`SCM-TRUST-001`, `POL-GHA-001`), so a tag ref
+shows up when scanning a repository that uses one.
+
+### Release artifacts
+
+Each release carries one archive per platform plus `checksums.txt`:
+
+```
+skeptic_vX.Y.Z_linux_amd64.tar.gz
+skeptic_vX.Y.Z_linux_arm64.tar.gz
+skeptic_vX.Y.Z_darwin_amd64.tar.gz
+skeptic_vX.Y.Z_darwin_arm64.tar.gz
+skeptic_vX.Y.Z_windows_amd64.zip
+checksums.txt
+```
+
+The action downloads the archive matching the runner and verifies its SHA256
+against `checksums.txt` before extracting. A mismatch fails the step rather than
+falling back to a source build.
+
+Adding a platform means adding it to the matrix in the `Build release archives`
+step and to the OS/arch mapping in `action.yml`.
