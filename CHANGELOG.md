@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.3.0 — unreleased
+
+### Fixed
+
+- **Developer-mode gate no longer fails open.** Confidence class and gate
+  eligibility were declared in two separate prefix slices, and they had drifted:
+  `CLOUD-ID-` and `POL-GHA-` presented findings as `definitive` at `HIGH`
+  severity but could never cross a `--fail-on` threshold. A workflow with
+  `permissions: write-all` produced two HIGH/definitive findings and still
+  exited `0` under the GitHub Action's default configuration. Both properties now
+  live in one `ruleFamilies` table, and a definitive family must either gate or
+  record why it cannot (#55)
+- Removed three phantom rule families — `CI-MUTABLE-`, `CI-EXEC-`, `NON-CODE-` —
+  that were wired into the confidence and gating tables, and documented as
+  shipping families, with no rule emitting them. The conditions they named are
+  detected by `SCM-TRUST-001` and `CI-ABUSE-*` (#57)
+
+### Added
+
+- `CI-ABUSE-` and `CI-SECRET-` now gate in developer mode
+- A passing run that had findings at or above `--fail-on` which were excluded by
+  gate eligibility now emits a `WARN` naming the rule IDs, so fail-open is never
+  silent
+- `model.RuleFamilies()` exposes the family table; `model.GateSuppressedRuleIDs`
+  reports findings the gate skipped
+- Tests enforcing that every declared family prefix is emitted by real code, and
+  that definitive families gate or explain why they do not
+
 ## v0.2.1 — 2026-05-19
 
 ### Documentation
@@ -44,10 +72,11 @@ Initial public release.
 
 ### Rule families
 
-- **CI/CD** (CI-BUILD, CI-ENV, CI-GOV, CI-DEPBOT, CI-MUTABLE, CI-PRT, CI-EXEC,
-  CI-SECRET): build hygiene, environment exposure, governance gaps,
-  dependency-bot attack surface, mutable action refs, pull request target abuse,
-  execution injection, secret hygiene
+- **CI/CD** (CI-BUILD, CI-ENV, CI-GOV, CI-DEPBOT, CI-PRT, CI-ABUSE, CI-EXFIL,
+  CI-SECRET, POL-GHA, SCM-TRUST): build hygiene, environment exposure,
+  governance gaps, dependency-bot attack surface, pull request target abuse,
+  execution injection, credential exfiltration, secret hygiene, workflow policy,
+  mutable action refs
 - **Agentic** (AGT-SKL, AGT-MCP, AGT-MEM, AGT-OUT, AGT-TRUST, AGT-ART):
   SKILL.md directive injection, MCP tool shadowing and credential interpolation,
   memory persistence poisoning, tool-output instruction injection,

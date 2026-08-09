@@ -315,6 +315,39 @@ func resolveRunConfig(fs *flag.FlagSet, raw *runRawOptions, stderr io.Writer, pe
 	return out, 0
 }
 
+// gateSuppressedRuleIDCap bounds how many rule IDs the fail-open note names
+// before summarizing the rest.
+const gateSuppressedRuleIDCap = 5
+
+// warnGateSuppressed reports findings that met the --fail-on severity but were
+// excluded from gating by rule-family eligibility. Without this, a run that
+// found qualifying issues and still exited 0 looks identical to a clean run.
+func warnGateSuppressed(report *model.Report, cfg resolvedRunConfig) {
+	ids := model.GateSuppressedRuleIDs(report.Findings, cfg.failOn, cfg.scanMode)
+	if len(ids) == 0 {
+		return
+	}
+	shown := ids
+	suffix := ""
+	if len(shown) > gateSuppressedRuleIDCap {
+		shown = shown[:gateSuppressedRuleIDCap]
+		suffix = fmt.Sprintf(", +%d more", len(ids)-gateSuppressedRuleIDCap)
+	}
+	cfg.logger.Warnf(
+		"%d rule famil%s at or above --fail-on %s did not gate in %s mode: %s%s "+
+			"(run with --mode ir to see everything, or widen gate eligibility)",
+		len(ids), plural(len(ids), "y", "ies"), cfg.failOn, cfg.scanMode,
+		strings.Join(shown, ", "), suffix,
+	)
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
+}
+
 func postProcessReport(report *model.Report, raw *runRawOptions, cfg resolvedRunConfig, stdout, stderr io.Writer, mode skepticRunMode) int {
 	enrichReportFindings(report, raw, cfg.roots, cfg.threatMode, cfg.logger)
 
@@ -374,6 +407,7 @@ func postProcessReport(report *model.Report, raw *runRawOptions, cfg resolvedRun
 	if report.ThresholdExceeded {
 		return 3
 	}
+	warnGateSuppressed(report, cfg)
 	if raw.FailOnScore > 0 && report.RiskScore >= raw.FailOnScore {
 		report.ThresholdExceeded = true
 		return 3
