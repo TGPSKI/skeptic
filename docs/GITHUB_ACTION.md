@@ -160,6 +160,10 @@ When `format` is `sarif` (default) and `sarif-upload` is `true` (default), the a
 
 The upload runs even when the scan exits with code 3 (policy failure), so findings are always visible regardless of whether the step passes or fails.
 
+**Waived findings are excluded from SARIF.** Code scanning turns every SARIF result into an alert and has no way to express "found and accepted" — it does not honor the SARIF `suppressions` property. Emitting a waived finding would open an alert the repository has already reviewed, and fail the check on any pull request touching that file.
+
+The complete record lives in the other formats: JSON carries `suppressed` and `suppression_reason` per finding, and the text and markdown reports label waived findings in place. Use `format: json` when you want the full set.
+
 Your workflow needs the `security-events: write` permission for SARIF upload:
 
 ```yaml

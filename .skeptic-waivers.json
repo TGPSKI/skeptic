@@ -155,7 +155,7 @@
       "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
       "author": "TGPSKI",
       "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "1610f5aa9198e6500e30980b379173d85d051b70c82ce09b68728dc6cbbb40f8"
+      "file_sha256": "6a21211b9ddaace5d08101de2585afaff8bb773bb883002d9433edcf7150b005"
     },
     {
       "rule_id": "CLOUD-ID-001",

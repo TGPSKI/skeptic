@@ -111,10 +111,10 @@ func TestBuildSARIFRunIncludesModeProperties(t *testing.T) {
 	}
 }
 
-// A waived finding stays in the report, so SARIF has to mark it suppressed.
-// Without this, code scanning opens an alert for every waived finding and the
-// check fails on a scan that exited 0 (#96).
-func TestSARIFEmitsSuppressionsForWaivedFindings(t *testing.T) {
+// A waived finding produces no SARIF result. GitHub code scanning turns every
+// result into an alert and does not honor result.suppressions, so emitting a
+// suppressed finding opens an alert for something already reviewed (#98).
+func TestSARIFOmitsSuppressedFindings(t *testing.T) {
 	report := model.Report{
 		TargetPaths: []string{"."},
 		Findings: []model.Finding{
@@ -139,50 +139,42 @@ func TestSARIFEmitsSuppressionsForWaivedFindings(t *testing.T) {
 
 	run := BuildSARIFRun(report)
 	results, ok := run["results"].([]any)
-	if !ok || len(results) != 2 {
-		t.Fatalf("expected 2 results, got %#v", run["results"])
+	if !ok {
+		t.Fatalf("results missing: %#v", run["results"])
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 result for 2 findings (1 waived), got %d", len(results))
+	}
+	if got := results[0].(map[string]any)["ruleId"]; got != "CI-PRT-001" {
+		t.Errorf("ruleId = %v, want CI-PRT-001", got)
 	}
 
-	byRule := map[string]map[string]any{}
-	for _, r := range results {
-		m := r.(map[string]any)
-		byRule[m["ruleId"].(string)] = m
-	}
-
-	waived := byRule["SCM-TRUST-001"]
-	sups, ok := waived["suppressions"].([]any)
-	if !ok || len(sups) != 1 {
-		t.Fatalf("waived finding: expected 1 suppression, got %#v", waived["suppressions"])
-	}
-	sup := sups[0].(map[string]any)
-	if sup["kind"] != "external" {
-		t.Errorf("kind = %v, want external", sup["kind"])
-	}
-	if sup["justification"] != "Documented usage example." {
-		t.Errorf("justification = %v", sup["justification"])
-	}
-
-	if _, present := byRule["CI-PRT-001"]["suppressions"]; present {
-		t.Error("unsuppressed finding must not carry a suppressions key")
+	// A suppressed finding must not contribute a rule descriptor either. A rule
+	// with no result is harmless but advertises a detection that produced
+	// nothing.
+	rules := run["tool"].(map[string]any)["driver"].(map[string]any)["rules"].([]map[string]any)
+	for _, r := range rules {
+		if r["id"] == "SCM-TRUST-001" {
+			t.Error("waived finding contributed a rule descriptor")
+		}
 	}
 }
 
-// A waiver with an empty reason still suppresses; the key is simply omitted.
-func TestSARIFSuppressionWithoutReasonOmitsJustification(t *testing.T) {
+// Every finding waived means an empty result set, not a missing key: SARIF
+// requires results to be present.
+func TestSARIFAllSuppressedYieldsEmptyResults(t *testing.T) {
 	report := model.Report{
-		Findings: []model.Finding{{
-			RuleID:     "X-001",
-			Severity:   model.SeverityLow,
-			File:       "a.txt",
-			Suppressed: true,
-		}},
+		Findings: []model.Finding{
+			{RuleID: "A-001", Severity: model.SeverityHigh, File: "a.txt", Suppressed: true},
+			{RuleID: "B-001", Severity: model.SeverityLow, File: "b.txt", Suppressed: true},
+		},
 	}
-	results := BuildSARIFRun(report)["results"].([]any)
-	sup := results[0].(map[string]any)["suppressions"].([]any)[0].(map[string]any)
-	if sup["kind"] != "external" {
-		t.Errorf("kind = %v, want external", sup["kind"])
+	run := BuildSARIFRun(report)
+	results, ok := run["results"].([]any)
+	if !ok {
+		t.Fatalf("results key must be present even when empty, got %#v", run["results"])
 	}
-	if _, present := sup["justification"]; present {
-		t.Error("justification must be omitted when the reason is empty")
+	if len(results) != 0 {
+		t.Fatalf("expected 0 results, got %d", len(results))
 	}
 }
