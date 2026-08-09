@@ -4,29 +4,26 @@
 
 ### Fixed
 
-- **Developer-mode gate no longer fails open.** Confidence class and gate
-  eligibility were declared in two separate prefix slices, and they had drifted:
-  `CLOUD-ID-` and `POL-GHA-` presented findings as `definitive` at `HIGH`
-  severity but could never cross a `--fail-on` threshold. A workflow with
-  `permissions: write-all` produced two HIGH/definitive findings and still
-  exited `0` under the GitHub Action's default configuration. Both properties now
-  live in one `ruleFamilies` table, and a definitive family must either gate or
-  record why it cannot (#55)
-- Removed three phantom rule families — `CI-MUTABLE-`, `CI-EXEC-`, `NON-CODE-` —
-  that were wired into the confidence and gating tables, and documented as
-  shipping families, with no rule emitting them. The conditions they named are
-  detected by `SCM-TRUST-001` and `CI-ABUSE-*` (#57)
+- Gate `CLOUD-ID-` and `POL-GHA-` findings in developer mode. Both were
+  classified `definitive` but omitted from gate eligibility, so a workflow with
+  `permissions: write-all` produced two HIGH findings and exited `0` under
+  `--preset ci --fail-on high` (#55)
+- Remove rule families `CI-MUTABLE-`, `CI-EXEC-`, and `NON-CODE-`. They were
+  declared in the confidence and gating tables and documented as shipping, but
+  no rule emitted them; `SCM-TRUST-001` and `CI-ABUSE-*` cover those conditions
+  (#57)
+
+### Changed
+
+- Confidence class and gate eligibility now come from one `ruleFamilies` table.
+  A definitive family must gate or record an `UngatedReason` (#55)
+- Gate `CI-ABUSE-` and `CI-SECRET-` in developer mode (#55)
 
 ### Added
 
-- `CI-ABUSE-` and `CI-SECRET-` now gate in developer mode
-- A passing run that had findings at or above `--fail-on` which were excluded by
-  gate eligibility now emits a `WARN` naming the rule IDs, so fail-open is never
-  silent
-- `model.RuleFamilies()` exposes the family table; `model.GateSuppressedRuleIDs`
-  reports findings the gate skipped
-- Tests enforcing that every declared family prefix is emitted by real code, and
-  that definitive families gate or explain why they do not
+- Warn on a passing run when findings at or above `--fail-on` were excluded by
+  gate eligibility, naming the rule IDs (#55)
+- `model.RuleFamilies()` and `model.GateSuppressedRuleIDs()` (#55)
 
 ## v0.2.1 — 2026-05-19
 

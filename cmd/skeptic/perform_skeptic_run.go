@@ -315,8 +315,7 @@ func resolveRunConfig(fs *flag.FlagSet, raw *runRawOptions, stderr io.Writer, pe
 	return out, 0
 }
 
-// gateSuppressedRuleIDCap bounds how many rule IDs the fail-open note names
-// before summarizing the rest.
+// gateSuppressedRuleIDCap bounds how many rule IDs the warning names.
 const gateSuppressedRuleIDCap = 5
 
 // warnGateSuppressed reports findings that met the --fail-on severity but were
@@ -334,18 +333,9 @@ func warnGateSuppressed(report *model.Report, cfg resolvedRunConfig) {
 		suffix = fmt.Sprintf(", +%d more", len(ids)-gateSuppressedRuleIDCap)
 	}
 	cfg.logger.Warnf(
-		"%d rule famil%s at or above --fail-on %s did not gate in %s mode: %s%s "+
-			"(run with --mode ir to see everything, or widen gate eligibility)",
-		len(ids), plural(len(ids), "y", "ies"), cfg.failOn, cfg.scanMode,
-		strings.Join(shown, ", "), suffix,
+		"reached --fail-on %s but advisory in %s mode, did not gate: %s%s",
+		cfg.failOn, cfg.scanMode, strings.Join(shown, ", "), suffix,
 	)
-}
-
-func plural(n int, one, many string) string {
-	if n == 1 {
-		return one
-	}
-	return many
 }
 
 func postProcessReport(report *model.Report, raw *runRawOptions, cfg resolvedRunConfig, stdout, stderr io.Writer, mode skepticRunMode) int {
