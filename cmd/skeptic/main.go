@@ -204,6 +204,7 @@ func runVersion(stdout io.Writer) int {
 // short and long forms onto a single help line.
 var scanFlagShorthands = map[string]string{
 	"f": "format",
+	"o": "out",
 	"p": "path",
 }
 

@@ -27,6 +27,8 @@
 
 ### Changed
 
+- `report.WriteJSONReport` writes atomically, so `--write-baseline` output and
+  the daemon report cannot be read half-written (#61)
 - Confidence class and gate eligibility now come from one `ruleFamilies` table.
   A definitive family must gate or record an `UngatedReason` (#55)
 - Gate `CI-ABUSE-` and `CI-SECRET-` in developer mode (#55)

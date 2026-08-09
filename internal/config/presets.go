@@ -243,6 +243,7 @@ func ApplyRunConfigValues(raw *RunRawOptions, values map[string]string, visited 
 	if err := setBool("no-rulepacks", &raw.NoRulepacks); err != nil {
 		return err
 	}
+	setString("out", &raw.OutPath)
 	setString("format", &raw.OutputFormatRaw, "output", "output-format")
 	setString("rule-quality", &raw.RuleQualityRaw)
 	setString("fail-on", &raw.FailOnRaw)

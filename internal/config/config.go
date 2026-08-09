@@ -31,6 +31,7 @@ type RunRawOptions struct {
 	RequireSignedRules              bool
 	NoDefaultRules                  bool
 	OutputFormatRaw                 string
+	OutPath                         string
 	RuleQualityRaw                  string
 	FailOnRaw                       string
 	MaxBytes                        int64

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,24 +27,46 @@ func parseOutputFormat(raw string) (model.OutputFormat, error) {
 	}
 }
 
-func emitReport(stdout io.Writer, stderr io.Writer, report model.Report, outputFormat model.OutputFormat) (model.Report, int) {
+// emitReportTo renders the report to dest in the requested format.
+func emitReportTo(dest io.Writer, stderr io.Writer, report model.Report, outputFormat model.OutputFormat) (model.Report, int) {
 	switch outputFormat {
 	case model.FormatJSON:
-		enc := json.NewEncoder(stdout)
+		enc := json.NewEncoder(dest)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(report); err != nil {
 			fmt.Fprintf(stderr, "json encode failed: %v\n", err)
 			return model.Report{}, 1
 		}
 	case model.FormatSARIF:
-		if err := reportpkg.WriteSARIFReport(stdout, report); err != nil {
+		if err := reportpkg.WriteSARIFReport(dest, report); err != nil {
 			fmt.Fprintf(stderr, "sarif encode failed: %v\n", err)
 			return model.Report{}, 1
 		}
 	case model.FormatMarkdown:
-		reportpkg.WriteMarkdown(stdout, report)
+		reportpkg.WriteMarkdown(dest, report)
 	default:
-		reportpkg.WriteTextReport(stdout, report)
+		reportpkg.WriteTextReport(dest, report)
+	}
+	return report, 0
+}
+
+// emitReport writes the report to outPath when set, otherwise to stdout.
+// The file write is atomic, so a consumer polling the path never reads a
+// half-written report.
+func emitReport(
+	stdout io.Writer, stderr io.Writer, report model.Report,
+	outputFormat model.OutputFormat, outPath string,
+) (model.Report, int) {
+	if strings.TrimSpace(outPath) == "" {
+		return emitReportTo(stdout, stderr, report, outputFormat)
+	}
+	var buf bytes.Buffer
+	if r, code := emitReportTo(&buf, stderr, report, outputFormat); code != 0 {
+		return r, code
+	}
+	if err := reportpkg.WriteFileAtomic(outPath, buf.Bytes(), 0o644); err != nil {
+		fmt.Fprintf(stderr, "failed to write report to %s: %v\n", outPath, err)
+		return model.Report{}, 1
 	}
 	return report, 0
 }

@@ -106,6 +106,7 @@ These are the flags most users need on their first scan.
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--path` | `.` | Directory or file to scan |
+| `--out` | _(stdout)_ | Write the report to this path instead of stdout. Written atomically; parent directories are created. Also settable as the `out` config key. |
 | `--mode` | `developer` | Operating mode: `developer` (default trust audit: `fail-on` critical, developer finding filter), `ir` (incident response: advisory default `fail-on` none), `deep` (expert breadth: advisory default `fail-on` none). Modes layer **below** preset and config; see [Precedence](#precedence). |
 | `--preset` | _(none)_ | Simple preset: `quick`, `dev`, `ci`, `hunt`, `machine-identity`, `ai-workload` |
 | `--format` | `text` | Output format: `text`, `json`, `sarif`, `markdown` |

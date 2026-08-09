@@ -220,8 +220,11 @@ runs:
       run: |
         set -uo pipefail
 
+        # The release archive for Windows carries skeptic.exe.
         SKEPTIC_BIN="${ACTION_BIN_DIR}/skeptic"
-        [ -x "${SKEPTIC_BIN}" ] || SKEPTIC_BIN="${ACTION_BIN_DIR}/skeptic.exe"
+        if [ ! -x "${SKEPTIC_BIN}" ] && [ -x "${ACTION_BIN_DIR}/skeptic.exe" ]; then
+          SKEPTIC_BIN="${ACTION_BIN_DIR}/skeptic.exe"
+        fi
 
         SUFFIX="$(date +%s)-$$"
         case "${INPUT_FORMAT}" in
@@ -243,6 +246,7 @@ runs:
           --fail-on-score "${INPUT_FAIL_ON_SCORE}"
           --scan-style "${INPUT_SCAN_STYLE}"
           --threat-mode "${INPUT_THREAT_MODE}"
+          --out "${RESULT_FILE}"
         )
 
         # `cond && ARGS+=(...)` would abort the step under the runner's default
@@ -262,7 +266,7 @@ runs:
 
         LOG_FILE="${RUNNER_TEMP}/skeptic-stderr-${SUFFIX}.log"
         EXIT_CODE=0
-        "${SKEPTIC_BIN}" "${ARGS[@]}" > "${RESULT_FILE}" 2>"${LOG_FILE}" || EXIT_CODE=$?
+        "${SKEPTIC_BIN}" "${ARGS[@]}" 2>"${LOG_FILE}" || EXIT_CODE=$?
         if [ -s "${LOG_FILE}" ]; then
           cat "${LOG_FILE}" >&2
         fi

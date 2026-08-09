@@ -694,7 +694,7 @@ func runCorpusScan(args []string, stdout io.Writer, stderr io.Writer, gf globalF
 
 	scanpkg.SortFindings(result.Report.Findings)
 	result.Report.FindingsBySeverity = scanpkg.SummarizeFindings(result.Report.Findings)
-	if _, code := emitReport(reportDest, stderr, result.Report, outputFormat); code != 0 {
+	if _, code := emitReport(reportDest, stderr, result.Report, outputFormat, ""); code != 0 {
 		return code
 	}
 

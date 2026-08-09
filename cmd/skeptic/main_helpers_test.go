@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -292,5 +294,68 @@ func writeFixture(t *testing.T, root string, relPath string, content string) {
 	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write failed for %s: %v", relPath, err)
+	}
+}
+
+func TestEmitReportToFile(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "nested", "report.json")
+	report := model.Report{
+		TargetPath: "/tmp/example",
+		Findings:   []model.Finding{{RuleID: "SCM-TRUST-001", Severity: model.SeverityHigh}},
+	}
+
+	var stdout, stderr bytes.Buffer
+	if _, code := emitReport(&stdout, &stderr, report, model.FormatJSON, out); code != 0 {
+		t.Fatalf("emitReport code = %d, stderr = %s", code, stderr.String())
+	}
+
+	if stdout.Len() != 0 {
+		t.Errorf("stdout should stay empty when --out is set, got %q", stdout.String())
+	}
+
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read report: %v", err)
+	}
+	var decoded model.Report
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("report is not valid JSON: %v", err)
+	}
+	if len(decoded.Findings) != 1 || decoded.Findings[0].RuleID != "SCM-TRUST-001" {
+		t.Errorf("findings did not round-trip: %+v", decoded.Findings)
+	}
+}
+
+func TestEmitReportEmptyOutPathGoesToStdout(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	report := model.Report{TargetPath: "/tmp/example"}
+
+	if _, code := emitReport(&stdout, &stderr, report, model.FormatJSON, ""); code != 0 {
+		t.Fatalf("emitReport code = %d, stderr = %s", code, stderr.String())
+	}
+	if stdout.Len() == 0 {
+		t.Error("expected the report on stdout when --out is empty")
+	}
+}
+
+func TestEmitReportUnwritableOutPathFails(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("running as root: directory permissions do not deny writes")
+	}
+	dir := t.TempDir()
+	locked := filepath.Join(dir, "locked")
+	if err := os.Mkdir(locked, 0o500); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(locked, 0o700) })
+
+	var stdout, stderr bytes.Buffer
+	_, code := emitReport(&stdout, &stderr, model.Report{}, model.FormatJSON, filepath.Join(locked, "r.json"))
+	if code == 0 {
+		t.Error("expected a non-zero code when the report cannot be written")
+	}
+	if !strings.Contains(stderr.String(), "failed to write report") {
+		t.Errorf("stderr should name the failure, got %q", stderr.String())
 	}
 }
