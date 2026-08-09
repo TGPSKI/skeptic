@@ -110,3 +110,79 @@ func TestBuildSARIFRunIncludesModeProperties(t *testing.T) {
 		t.Fatalf("expected policyChecks=true")
 	}
 }
+
+// A waived finding stays in the report, so SARIF has to mark it suppressed.
+// Without this, code scanning opens an alert for every waived finding and the
+// check fails on a scan that exited 0 (#96).
+func TestSARIFEmitsSuppressionsForWaivedFindings(t *testing.T) {
+	report := model.Report{
+		TargetPaths: []string{"."},
+		Findings: []model.Finding{
+			{
+				RuleID:            "SCM-TRUST-001",
+				Title:             "Mutable action ref",
+				Severity:          model.SeverityHigh,
+				File:              "docs/GITHUB_ACTION.md",
+				Line:              8,
+				Suppressed:        true,
+				SuppressionReason: "Documented usage example.",
+			},
+			{
+				RuleID:   "CI-PRT-001",
+				Title:    "Privileged PR trigger",
+				Severity: model.SeverityHigh,
+				File:     ".github/workflows/x.yml",
+				Line:     4,
+			},
+		},
+	}
+
+	run := BuildSARIFRun(report)
+	results, ok := run["results"].([]any)
+	if !ok || len(results) != 2 {
+		t.Fatalf("expected 2 results, got %#v", run["results"])
+	}
+
+	byRule := map[string]map[string]any{}
+	for _, r := range results {
+		m := r.(map[string]any)
+		byRule[m["ruleId"].(string)] = m
+	}
+
+	waived := byRule["SCM-TRUST-001"]
+	sups, ok := waived["suppressions"].([]any)
+	if !ok || len(sups) != 1 {
+		t.Fatalf("waived finding: expected 1 suppression, got %#v", waived["suppressions"])
+	}
+	sup := sups[0].(map[string]any)
+	if sup["kind"] != "external" {
+		t.Errorf("kind = %v, want external", sup["kind"])
+	}
+	if sup["justification"] != "Documented usage example." {
+		t.Errorf("justification = %v", sup["justification"])
+	}
+
+	if _, present := byRule["CI-PRT-001"]["suppressions"]; present {
+		t.Error("unsuppressed finding must not carry a suppressions key")
+	}
+}
+
+// A waiver with an empty reason still suppresses; the key is simply omitted.
+func TestSARIFSuppressionWithoutReasonOmitsJustification(t *testing.T) {
+	report := model.Report{
+		Findings: []model.Finding{{
+			RuleID:     "X-001",
+			Severity:   model.SeverityLow,
+			File:       "a.txt",
+			Suppressed: true,
+		}},
+	}
+	results := BuildSARIFRun(report)["results"].([]any)
+	sup := results[0].(map[string]any)["suppressions"].([]any)[0].(map[string]any)
+	if sup["kind"] != "external" {
+		t.Errorf("kind = %v, want external", sup["kind"])
+	}
+	if _, present := sup["justification"]; present {
+		t.Error("justification must be omitted when the reason is empty")
+	}
+}

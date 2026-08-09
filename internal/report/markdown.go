@@ -64,12 +64,19 @@ func WriteMarkdown(out io.Writer, report model.Report) {
 			if confCol == "" {
 				confCol = "HEURISTIC"
 			}
+			// A waived finding stays in the report, so the table has to say so.
+			// Rendering it identically to a live one reads as an open finding
+			// that nobody acted on.
+			title := f.Title
+			if f.Suppressed {
+				title = "~~" + f.Title + "~~ (waived)"
+			}
 			fmt.Fprintf(out, "| %s | %s | `%s` | `%s` | %s |\n",
 				strings.ToUpper(string(f.Severity)),
 				confCol,
 				f.RuleID,
 				file,
-				f.Title,
+				title,
 			)
 		}
 		fmt.Fprintln(out)

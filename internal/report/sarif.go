@@ -91,6 +91,20 @@ func BuildSARIFRun(report model.Report) map[string]any {
 		if finding.BaselineState != "" {
 			result["baselineState"] = finding.BaselineState
 		}
+		// A waived finding stays in the report — suppress.ApplyWaivers marks it
+		// rather than dropping it — so SARIF has to say it was suppressed.
+		// Without this, code scanning opens an alert for every waived finding
+		// and the check fails on a scan that exited 0 (#96).
+		//
+		// kind is "external" because the waiver lives in a separate file;
+		// "inSource" is for an annotation in the code itself.
+		if finding.Suppressed {
+			suppression := map[string]any{"kind": "external"}
+			if reason := strings.TrimSpace(finding.SuppressionReason); reason != "" {
+				suppression["justification"] = reason
+			}
+			result["suppressions"] = []any{suppression}
+		}
 		results = append(results, result)
 	}
 
