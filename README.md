@@ -12,23 +12,23 @@ A local repo trust auditor.
 
 ---
 
-[What skeptic is](#what-skeptic-is) | [What skeptic is not](#what-skeptic-is-not) | [Design](#design) | [Detection engine](#detection-engine) | [Rule ingestion and rule packs](#rule-ingestion-and-rule-packs) | [Corpus](#corpus) | [GitHub Action](#github-action) | [Runtimes](#runtimes)
+[What skeptic is](#what-skeptic-is) | [What skeptic is not](#what-skeptic-is-not) | [Design principles](#design-principles) | [Detection engine](#detection-engine) | [Rule packs and ingestion](#rule-packs-and-ingestion) | [Corpus](#corpus) | [GitHub Action](#github-action) | [Runtimes](#runtimes)
 
 ---
 
 ## Quick start
 
 ```sh
-sudo make install            # build + install
+sudo make install-completions   # build, install, add shell completions
 
-skeptic init                 # bootstrap config
-skeptic scan                 # scan
+skeptic init                    # bootstrap config
+skeptic scan                    # scan
 
-skeptic mcp                  # start the MCP server
-skeptic serve                # start the daemon
+skeptic mcp                     # start the MCP server
+skeptic serve                   # start the daemon
 
-skeptic ingest               # ingest threat intelligence
-skeptic corpus               # manage the encrypted threat artifact corpus
+skeptic ingest                  # ingest threat intelligence
+skeptic corpus                  # manage the encrypted threat artifact corpus
 ```
 
 ## What `skeptic` is
@@ -169,15 +169,17 @@ go install github.com/TGPSKI/skeptic/cmd/skeptic@latest
 ### Binary + completions (recommended)
 
 ```bash
-sudo make install
+sudo make install-completions
 ```
 
-This builds the binary, copies it to `/usr/local/bin/`, and installs shell completion scripts for bash, zsh, and fish into their standard system directories. The install gracefully skips any shell whose completion directory is not writable.
+This builds the binary, copies it to `/usr/local/bin/`, and installs shell completion scripts for bash, zsh, and fish into their standard system directories. It skips any shell whose completion directory is not writable.
+
+`make install` installs the binary only.
 
 Override paths if needed:
 
 ```bash
-sudo make install INSTALL_DIR=/opt/bin ZSH_COMPLETION_DIR=/usr/share/zsh/site-functions
+sudo make install-completions INSTALL_DIR=/opt/bin ZSH_COMPLETION_DIR=/usr/share/zsh/site-functions
 ```
 
 ### Binary only
@@ -310,13 +312,13 @@ skeptic scan --rules-file ./rules.json --rules-pubkey signing.pub.pem --require-
 | Flag              | Short | Default     | Description                                                    |
 | ----------------- | ----- | ----------- | -------------------------------------------------------------- |
 | `--path`          | `-p`  | `.`         | Root path to scan (also accepted as positional arg)            |
-| `--format`        | `-f`  | `text`      | Output: `text                                                  |
+| `--format`        | `-f`  | `text`      | `text` \| `json` \| `sarif` \| `markdown`                      |
 | `--config`        | `-c`  | auto        | Config file path (`.json`, `.yaml`, `.env`)                    |
-| `--mode`          |       | `developer` | Operating mode: `developer                                     |
-| `--preset`        |       | —           | Shorthand: `quick                                              |
-| `--profile`       |       | `repo`      | Scan profile: `repo                                            |
-| `--scan-style`    |       | `pattern`   | Detection style: `pattern                                      |
-| `--threat-mode`   |       | `all`       | Focus: `all                                                    |
+| `--mode`          |       | `developer` | `developer` \| `ir` \| `deep`                                  |
+| `--preset`        |       | —           | `quick` \| `dev` \| `ci` \| `hunt` \| `machine-identity` \| `ai-workload` |
+| `--profile`       |       | `repo`      | `repo` \| `developer` \| `container` \| `fullfs`               |
+| `--scan-style`    |       | `pattern`   | `pattern` \| `behavior` \| `hybrid` (all three modes set `hybrid`) |
+| `--threat-mode`   |       | `all`       | `all` \| `machine-identity` \| `ai-workload`                   |
 | `--fail-on`       |       | `critical`  | Severity gate: `none` through `critical`                       |
 | `--fail-on-score` |       | `0`         | Risk score gate (0–100, 0 disables)                            |
 | `--incremental`   |       | `false`     | Skip unchanged files via mtime/hash cache                      |
