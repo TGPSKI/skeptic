@@ -28,21 +28,16 @@ func LoadBaselineReport(path string) (model.Report, error) {
 	return report, nil
 }
 
-// WriteJSONReport writes a JSON report file and creates parent directories when needed.
+// WriteJSONReport writes a JSON report file and creates parent directories when
+// needed. The write is atomic, so a concurrent reader — a later --baseline run,
+// or a daemon serving the last report — never sees a truncated file.
 func WriteJSONReport(path string, report model.Report) error {
-	abs, err := filepath.Abs(model.ExpandHomePath(path))
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
-		return err
-	}
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
 		return err
 	}
 	data = append(data, '\n')
-	return os.WriteFile(abs, data, 0o644)
+	return WriteFileAtomic(path, data, 0o644)
 }
 
 // FindingIdentityKey builds a stable identity for baseline comparisons from rule id, file path,

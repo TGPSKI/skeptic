@@ -48,6 +48,8 @@ func registerRunFlags(fs *flag.FlagSet, raw *runRawOptions, stderr io.Writer) {
 	fs.StringVar(&raw.WaiversRaw, "waivers", "", "waiver JSON file path (empty = no suppression)")
 	fs.StringVar(&raw.OutputFormatRaw, "format", string(model.FormatText), "output format: text|json|sarif|markdown")
 	fs.StringVar(&raw.OutputFormatRaw, "f", string(model.FormatText), "output format: text|json|sarif|markdown")
+	fs.StringVar(&raw.OutPath, "out", "", "write the report to a file (empty = stdout)")
+	fs.StringVar(&raw.OutPath, "o", "", "write the report to a file (empty = stdout)")
 	fs.StringVar(&raw.RuleQualityRaw, "rule-quality", string(model.RuleQualityWarn), "rule quality mode: off|warn|strict")
 	fs.StringVar(&raw.FailOnRaw, "fail-on", string(model.SeverityCritical), "fail threshold: none|info|low|medium|high|critical")
 	fs.IntVar(&raw.FailOnScore, "fail-on-score", 0, "fail if risk score >= N (0 disables)")
@@ -173,6 +175,7 @@ type resolvedRunConfig struct {
 	logCloser      io.Closer
 	failOn         model.Severity
 	outputFormat   model.OutputFormat
+	outPath        string
 	roots          []string
 	loadedRules    []model.Rule
 	includeRuleIDs []string
@@ -231,6 +234,7 @@ func resolveRunConfig(fs *flag.FlagSet, raw *runRawOptions, stderr io.Writer, pe
 		return resolvedRunConfig{}, 2
 	}
 	out.outputFormat = outputFormat
+	out.outPath = raw.OutPath
 	ruleQualityMode, err := rules.ParseRuleQualityMode(raw.RuleQualityRaw)
 	if err != nil {
 		fmt.Fprintf(stderr, "invalid --rule-quality value: %v\n", err)
@@ -380,7 +384,7 @@ func postProcessReport(report *model.Report, raw *runRawOptions, cfg resolvedRun
 		if cfg.outputFormat == model.FormatSARIF {
 			report.ToolVersion = skepticToolVersion()
 		}
-		if _, code := emitReport(stdout, stderr, *report, cfg.outputFormat); code != 0 {
+		if _, code := emitReport(stdout, stderr, *report, cfg.outputFormat, cfg.outPath); code != 0 {
 			return code
 		}
 	}

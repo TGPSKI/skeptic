@@ -257,7 +257,7 @@ New high-signal rules (with tests), false-positive reduction, runtime hardening,
 ### CI gating
 
 ```bash
-skeptic scan -p . --preset ci -f sarif --fail-on high > skeptic.sarif
+skeptic scan -p . --preset ci -f sarif --fail-on high -o skeptic.sarif
 ```
 
 ### Baseline + diff-only
@@ -314,6 +314,7 @@ skeptic scan --rules-file ./rules.json --rules-pubkey signing.pub.pem --require-
 | ----------------- | ----- | ----------- | -------------------------------------------------------------- |
 | `--path`          | `-p`  | `.`         | Root path to scan (also accepted as positional arg)            |
 | `--format`        | `-f`  | `text`      | `text` \| `json` \| `sarif` \| `markdown`                      |
+| `--out`           | `-o`  | stdout      | Write the report to a file (atomic; parents created)           |
 | `--config`        | `-c`  | auto        | Config file path (`.json`, `.yaml`, `.env`)                    |
 | `--mode`          |       | `developer` | `developer` \| `ir` \| `deep`                                  |
 | `--preset`        |       | —           | `quick` \| `dev` \| `ci` \| `hunt` \| `machine-identity` \| `ai-workload` |
