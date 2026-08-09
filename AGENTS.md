@@ -46,7 +46,7 @@ These are non-negotiable. Violating any of them is a build-breaking change.
 ## Module and Package Structure
 
 ```
-go.mod                       # module skeptic (standalone root, Go 1.24)
+go.mod                       # module github.com/TGPSKI/skeptic (Go 1.24)
 CODEOWNERS                   # code ownership hints (optional)
 action.yml                   # GitHub Actions composite action (reusable CI integration)
 cmd/skeptic/                 # CLI entry point — package main
@@ -119,8 +119,8 @@ internal/security    →  (stdlib only)
 | `OutputFormat` | string enum | `text`, `json`, `sarif`, `markdown` |
 | `ConfidenceClass` | string enum | `definitive`, `heuristic`, `correlated` |
 | `ScanMode` | string enum | `developer`, `ir`, `deep` |
-| `ScanStyle` | string enum | `pattern`, `behavior`, `focus`, `policy` |
-| `ThreatMode` | string enum | `all`, `machine-identity`, `agentic`, `ci-cd`, `supply-chain` |
+| `ScanStyle` | string enum | `pattern`, `behavior`, `hybrid` |
+| `ThreatMode` | string enum | `all`, `machine-identity`, `ai-workload` |
 | `RuleQualityMode` | string enum | `off`, `warn`, `strict` |
 | `RuleTarget` | string enum | File-type targeting for rules |
 | `ScanProfile` | string enum | Preset profile names |
