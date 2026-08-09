@@ -13,6 +13,37 @@ The action scans the workspace, so **your workflow must check out the code first
 
 It scans with `--preset ci --format sarif --fail-on high`, uploads SARIF to GitHub code scanning, and fails the step on policy violation.
 
+## Permissions
+
+| Permission | When it is needed |
+|---|---|
+| `contents: read` | always — the action reads the checked-out workspace |
+| `security-events: write` | only when `sarif-upload` is `true` (the default) |
+
+The SARIF upload is the only step that needs more than read access. Set
+`sarif-upload: 'false'` if you would rather not grant it; the results file is
+still produced and still uploaded as a workflow artifact.
+
+## Runner support
+
+| Runner OS | Arch | How skeptic is obtained |
+|---|---|---|
+| Linux | x64, arm64 | prebuilt release binary |
+| macOS | x64, arm64 | prebuilt release binary |
+| Windows | x64 | prebuilt release binary |
+| Windows | arm64 | source build |
+| any | other | source build |
+
+The prebuilt path applies when the action is pinned to a version tag. See
+[How it works](#how-it-works) for when it falls back to a source build.
+
+Windows runners execute skeptic's unit tests on every CI run as of v0.3.1.
+Two platform limits stand: file permissions are not enforceable through the
+stdlib on Windows, so `CheckWorldWritableArtifacts` reports nothing there, and
+committed symlinks are materialized by git as plain text files unless the
+runner holds `SeCreateSymbolicLinkPrivilege`, so `SCM-SYM-` rules do not fire on
+them.
+
 ## Full example
 
 ```yaml
@@ -55,7 +86,7 @@ jobs:
 | `rules-pubkey` | _(empty)_ | Ed25519 public key for rule pack signature verification |
 | `baseline` | _(empty)_ | Prior JSON report for diff-only gating |
 | `waivers` | _(empty)_ | JSON waiver file path |
-| `go-version` | `1.24` | Go version used only when building from source (see [How it works](#how-it-works)) |
+| `go-version` | `1.24` | Go version for the source-build fallback. Unused when a prebuilt binary is downloaded (see [How it works](#how-it-works)) |
 | `sarif-upload` | `true` | Auto-upload SARIF to GitHub code scanning |
 | `extra-args` | _(empty)_ | Additional CLI flags passed directly to `skeptic scan` |
 
@@ -66,6 +97,7 @@ jobs:
 | `exit-code` | skeptic exit code: `0`=pass, `1`=error, `2`=bad args, `3`=policy failure |
 | `sarif-file` | Path to SARIF results file (when `format=sarif`) |
 | `result-file` | Path to results file (any format) |
+| `run-id` | Per-invocation suffix; disambiguates the results artifact when the action runs more than once in a job |
 
 ## Exit codes
 
@@ -154,6 +186,44 @@ Exit code 3 fails the workflow step. Set `fail-on: none` for advisory-only scans
     waivers: ./.skeptic-waivers.json
 ```
 
+A waiver may pin `file_sha256`, in which case it stops applying as soon as that
+file changes. That is what makes a waiver safer than an ignore rule for any path
+whose content could grow later — documentation especially. skeptic's own
+repository uses this; see the worked example in the
+[README](../README.md#worked-example-this-repository).
+
+### Running the action twice in one job
+
+```yaml
+- uses: TGPSKI/skeptic@v0
+  id: app
+  with:
+    path: ./app
+    fail-on: high
+
+- uses: TGPSKI/skeptic@v0
+  id: infra
+  with:
+    path: ./infra
+    fail-on: critical
+```
+
+Each invocation writes its own results artifact. The artifact name carries the
+`run-id` output, so two scans with the same `format` and `fail-on` do not
+collide.
+
+Set `sarif-upload: 'false'` on all but one invocation. Code scanning keys
+results by category, the action does not expose that input, so a second upload
+in the same job replaces the first rather than adding to it. To publish both,
+upload them yourself from `sarif-file` with distinct `category` values:
+
+```yaml
+- uses: github/codeql-action/upload-sarif@v4
+  with:
+    sarif_file: ${{ steps.infra.outputs.sarif-file }}
+    category: infra
+```
+
 ## SARIF and code scanning
 
 When `format` is `sarif` (default) and `sarif-upload` is `true` (default), the action automatically uploads results to GitHub's code scanning. Findings appear in the Security tab of your repository.
@@ -184,7 +254,13 @@ For supply chain safety, pin to a full commit SHA instead:
 
 skeptic detects mutable action refs itself (`SCM-TRUST-001`, `POL-GHA-001`), so a tag reference will show up as a finding when you scan your own repository.
 
-A SHA-pinned ref builds skeptic from source, because a commit SHA does not identify a release. Pin to an exact version tag (`@v0.3.0`) to get the prebuilt binary and a SHA-verified download.
+A SHA-pinned ref builds skeptic from source, because a commit SHA does not identify a release. Pin to an exact version tag (`@v0.3.1`) to get the prebuilt binary and a SHA-verified download.
+
+From v0.3.1 the release archives also carry Sigstore build provenance. Verify one outside CI with:
+
+```bash
+gh attestation verify skeptic_v0.3.1_linux_amd64.tar.gz --repo TGPSKI/skeptic
+```
 
 ## How it works
 
