@@ -133,6 +133,43 @@ make validate-rules      # Rule pattern validation
 - Method-level documentation for non-obvious logic
 - Tests for every exported function and every rule pattern
 
+## Branch rulesets
+
+`.github/ruleset-main.json`, `.github/ruleset-main-reviews.json`, and
+`.github/ruleset-fork-only.json` are committed copies of server-side state.
+**A ruleset change goes in the file and on the server, in the same change.**
+Editing one without the other is how `test-action` stayed listed as a required
+check for two releases after the ruleset was supposed to point at
+`test-action-result` (#83).
+
+`.github/workflows/ruleset-drift.yml` compares them weekly, on manual dispatch,
+and on any PR touching a ruleset file. Run it locally with:
+
+```bash
+python3 scripts/ruleset-drift.py
+```
+
+It compares `name`, `target`, `enforcement`, `conditions`, `bypass_actors`, and
+each rule's `type` and `parameters`. Server-managed fields (`id`, `created_at`,
+`_links`, and similar) are stripped first. Lists are order-normalized, because
+the API does not promise a stable order.
+
+Reading rulesets needs a token with repo admin scope. The default
+`GITHUB_TOKEN` can list them, but the API returns a **reduced view** with
+`bypass_actors` absent — not empty, absent. Diffing against that would report
+drift that does not exist, so the script detects the withheld field and exits 78
+rather than comparing. The workflow turns 78 into a warning, so a missing
+permission never reads as "no drift" and never as a false alarm either.
+
+Set a `RULESET_READ_TOKEN` secret with repo admin scope to make the check
+actually run in CI.
+
+To apply a file to the server:
+
+```bash
+gh api -X PUT repos/TGPSKI/skeptic/rulesets/<id> --input .github/ruleset-main.json
+```
+
 ## Releases
 
 Releases are cut by `.github/workflows/release.yml` via manual dispatch. The

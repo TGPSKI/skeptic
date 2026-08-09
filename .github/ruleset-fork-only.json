@@ -4,8 +4,12 @@
   "enforcement": "active",
   "conditions": {
     "ref_name": {
-      "include": ["~ALL"],
-      "exclude": ["refs/heads/main"]
+      "exclude": [
+        "refs/heads/main"
+      ],
+      "include": [
+        "~ALL"
+      ]
     }
   },
   "rules": [
