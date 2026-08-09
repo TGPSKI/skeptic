@@ -20,6 +20,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      security-events: write # the self-scan uploads SARIF to code scanning
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -74,17 +77,17 @@ jobs:
           path: bench-results.txt
           retention-days: 30
 
-      - name: Self-scan (SARIF)
-        if: always()
-        run: go run ./cmd/skeptic --path . --format sarif > skeptic-results.sarif 2>/dev/null || true
-
-      - name: Upload SARIF artifact
-        if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: skeptic-sarif-${{ matrix.os }}
-          path: skeptic-results.sarif
-          retention-days: 30
+      # Runs through the local composite action rather than `go run`, so
+      # action.yml is exercised on every CI run and the repository is gated by
+      # the same path a consumer uses. Config comes from the committed
+      # .skeptic.json; see it for what is ignored and why.
+      #
+      # This step blocks. It previously discarded stderr and exit code with
+      # `|| true`, so 487 findings and a 100/100 risk score enforced nothing
+      # (#65).
+      - name: Self-scan
+        if: matrix.os == 'ubuntu-latest'
+        uses: ./
 
   # Windows is a separate job rather than a third matrix entry because
   # windows-latest ships no GNU Make, so every `make` step above would need a

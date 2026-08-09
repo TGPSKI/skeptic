@@ -117,6 +117,35 @@ The action scans the workspace, so check out your code first. It downloads a che
 
 See [docs/GITHUB_ACTION.md](docs/GITHUB_ACTION.md) for the full input/output reference and recipes.
 
+### Worked example: this repository
+
+`.skeptic.json` and `.skeptic-waivers.json` at the repo root gate skeptic's own
+CI. They are the reference pair to copy.
+
+`.skeptic.json` ignores only paths whose contents are attack patterns by
+construction: the deliberate fixtures under `testdata/`, the signed IOC packs in
+`rulepacks/campaigns/`, the rule definitions in `internal/rules/` and
+`internal/checks/`, and `*_test.go` files carrying detection fixtures.
+
+Everything else stays scanned, **including markdown**. Findings that were
+reviewed and accepted go in `.skeptic-waivers.json`, pinned to the file's
+SHA256:
+
+```json
+{
+  "rule_id": "SCM-TRUST-001",
+  "file_path": "docs/GITHUB_ACTION.md",
+  "file_sha256": "1610f5aa…",
+  "reason": "Documented usage example. The mutable ref is the subject of the prose."
+}
+```
+
+A pinned waiver stops applying the moment the file changes. Appending one line
+to `docs/GITHUB_ACTION.md` re-exposes all 12 waived findings and the scan exits
+`3`. That is the difference between a waiver and an ignore rule: an ignore is
+permanent and blind, a waiver is a statement about bytes you actually read.
+Prefer waivers for any path where content could be added later.
+
 ## Runtimes
 
 ### CLI scan

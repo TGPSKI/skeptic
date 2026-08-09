@@ -10,12 +10,14 @@ bench-results.txt
 bench-baseline.txt
 *.sarif
 
-# Scanner state and config
+# Scanner state. Per-run and per-developer, never committed.
 .skeptic/
 .skeptic-state.json
-.skeptic-waivers.json
-.skeptic.json
 baseline.json
+
+# .skeptic.json and .skeptic-waivers.json are committed here on purpose (#65).
+# They gate this repository's own CI and double as the worked example users
+# copy. Repositories that keep scan config developer-local should ignore them.
 
 # Corpus artifacts
 .corpus-key
