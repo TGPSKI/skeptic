@@ -870,12 +870,22 @@ func TestConcurrentFetchLock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ReleaseFlock(f1)
 
 	_, err = AcquireFlock(lockPath)
 	if err == nil {
 		t.Fatal("expected error for concurrent lock")
 	}
+
+	// Releasing must make the lock available again. Without this the Windows
+	// UnlockFileEx path could no-op and the test would still pass on the
+	// contention check alone.
+	ReleaseFlock(f1)
+
+	f2, err := AcquireFlock(lockPath)
+	if err != nil {
+		t.Fatalf("lock not released: %v", err)
+	}
+	ReleaseFlock(f2)
 }
 
 // --- Corpus.go tests ---

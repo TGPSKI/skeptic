@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"syscall"
 )
 
 const (
@@ -204,14 +203,15 @@ func WriteMarkerFiles(corpusRoot string) error {
 	return nil
 }
 
-// AcquireFlock acquires an advisory exclusive lock on the given path.
-// Returns the file descriptor for use with ReleaseFlock.
+// AcquireFlock acquires a non-blocking exclusive lock on the given path.
+// Returns the open file for use with ReleaseFlock. The locking primitive is
+// platform-specific; see flock_unix.go and flock_windows.go.
 func AcquireFlock(path string) (*os.File, error) {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, fmt.Errorf("corpus: flock open: %w", err)
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+	if err := lockFileExclusive(f); err != nil {
 		if cerr := f.Close(); cerr != nil {
 			return nil, fmt.Errorf("corpus: flock %s failed: %w (close: %v)", path, err, cerr)
 		}
@@ -225,7 +225,7 @@ func ReleaseFlock(f *os.File) {
 	if f == nil {
 		return
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_UN); err != nil {
+	if err := unlockFile(f); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: flock unlock: %v\n", err)
 	}
 	if err := f.Close(); err != nil {

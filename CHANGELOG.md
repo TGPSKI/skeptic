@@ -12,6 +12,10 @@
 
 ### Fixed
 
+- Build for Windows. `internal/corpus` called `syscall.Flock`, which is
+  Unix-only, so `GOOS=windows go build ./...` failed. Locking moves behind
+  build-tagged `lockFileExclusive`/`unlockFile`; Windows uses `LockFileEx` over
+  the full byte range (#77)
 - Gate `CLOUD-ID-` and `POL-GHA-` findings in developer mode. Both were
   classified `definitive` but omitted from gate eligibility, so a workflow with
   `permissions: write-all` produced two HIGH findings and exited `0` under
