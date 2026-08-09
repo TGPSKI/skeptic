@@ -218,11 +218,15 @@ in the same job replaces the first rather than adding to it. To publish both,
 upload them yourself from `sarif-file` with distinct `category` values:
 
 ```yaml
-- uses: github/codeql-action/upload-sarif@v4
+- uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
   with:
     sarif_file: ${{ steps.infra.outputs.sarif-file }}
     category: infra
 ```
+
+That ref is SHA-pinned to match how `action.yml` pins the same action. The
+`TGPSKI/skeptic@v0` refs elsewhere on this page are moving tags on purpose —
+see [Ref pinning](#ref-pinning).
 
 ## SARIF and code scanning
 
