@@ -3,7 +3,7 @@ PKG := ./cmd/skeptic
 BIN_DIR := bin
 BIN := $(BIN_DIR)/skeptic
 
-.PHONY: help fmt check test test-race integration integration-fast integration-full integration-scale integration-perf ci coverage coverage-check lint build install install-completions uninstall run scan sarif ingest sign-rulepack gen-rule-keypair serve mcp init version validate-rules validate-rulepacks bench bench-save bench-compare clean profile profile-cpu profile-mem profile-trace perf-debug
+.PHONY: waivers-check waivers-refresh ruleset-drift help fmt check test test-race integration integration-fast integration-full integration-scale integration-perf ci coverage coverage-check lint build install install-completions uninstall run scan sarif ingest sign-rulepack gen-rule-keypair serve mcp init version validate-rules validate-rulepacks bench bench-save bench-compare clean profile profile-cpu profile-mem profile-trace perf-debug
 
 help:
 	@echo "Targets:"
@@ -20,6 +20,9 @@ help:
 	@echo "  make coverage - Run tests with coverage summary"
 	@echo "  make coverage-check - Coverage gate (fail if < 60%%)"
 	@echo "  make lint     - Run golangci-lint"
+	@echo "  make waivers-check   - Fail if any .skeptic-waivers.json pin is stale"
+	@echo "  make waivers-refresh - Re-pin stale waivers, printing what they re-suppress"
+	@echo "  make ruleset-drift   - Diff committed .github/ruleset-*.json against live"
 	@echo "  make build    - Build scanner binary to $(BIN)"
 	@echo "  make install  - Build and install skeptic"
 	@echo "  make install-completions - Build and install skeptic and shell completions"
@@ -90,6 +93,19 @@ coverage-check:
 
 lint:
 	golangci-lint run ./...
+
+# A pinned waiver lapses when its file changes, which is what makes it safer
+# than an ignore rule — and what breaks the build after editing a waived file.
+waivers-check:
+	@python3 scripts/refresh-waivers.py --check
+
+# Re-pins stale waivers and prints the findings each one will suppress again.
+# Read them: re-pinning without looking turns a waiver into an ignore rule.
+waivers-refresh:
+	@python3 scripts/refresh-waivers.py
+
+ruleset-drift:
+	@python3 scripts/ruleset-drift.py
 
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)

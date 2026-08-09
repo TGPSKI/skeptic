@@ -28,6 +28,10 @@ results/
 private/
 sessions/
 
+# Python bytecode from scripts/
+__pycache__/
+*.pyc
+
 # Profiling output
 cpu.prof
 mem.prof
