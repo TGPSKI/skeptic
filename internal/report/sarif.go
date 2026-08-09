@@ -28,6 +28,20 @@ func BuildSARIFRun(report model.Report) map[string]any {
 	rulesByID := make(map[string]map[string]any, len(report.Findings))
 	results := make([]any, 0, len(report.Findings))
 	for _, finding := range report.Findings {
+		// A waived finding produces no SARIF result.
+		//
+		// SARIF's consumer here is GitHub code scanning, which turns every
+		// result into an alert and has no way to express "found and accepted".
+		// result.suppressions is not among the properties GitHub supports, so
+		// emitting it — as #97 did — is spec-correct and discarded: 50
+		// suppressions uploaded, 49 alerts opened (#98).
+		//
+		// The complete record stays in the JSON report, which carries
+		// suppressed and suppression_reason, and in the text and markdown
+		// reports, which label waived findings in place.
+		if finding.Suppressed {
+			continue
+		}
 		confClass := string(finding.ConfidenceClass)
 		if confClass == "" {
 			confClass = "heuristic"
@@ -90,20 +104,6 @@ func BuildSARIFRun(report model.Report) map[string]any {
 		}
 		if finding.BaselineState != "" {
 			result["baselineState"] = finding.BaselineState
-		}
-		// A waived finding stays in the report — suppress.ApplyWaivers marks it
-		// rather than dropping it — so SARIF has to say it was suppressed.
-		// Without this, code scanning opens an alert for every waived finding
-		// and the check fails on a scan that exited 0 (#96).
-		//
-		// kind is "external" because the waiver lives in a separate file;
-		// "inSource" is for an annotation in the code itself.
-		if finding.Suppressed {
-			suppression := map[string]any{"kind": "external"}
-			if reason := strings.TrimSpace(finding.SuppressionReason); reason != "" {
-				suppression["justification"] = reason
-			}
-			result["suppressions"] = []any{suppression}
 		}
 		results = append(results, result)
 	}
