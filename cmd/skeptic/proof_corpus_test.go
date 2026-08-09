@@ -278,7 +278,12 @@ func TestProofCorpusSupplyChainHygiene(t *testing.T) {
 		logFindings(t, report.Findings)
 		t.Error("expected at least one SCM-GIT-, SCM-PKG-, SCM-CACHE-, SCM-TEMP-, or SCM-SYM- finding")
 	}
-	if !hasSCMSym {
+	// The symlink fixtures are committed symlinks. Git on Windows materializes
+	// them as plain text files holding the target path unless core.symlinks is
+	// on and the process holds SeCreateSymbolicLinkPrivilege, so there is no
+	// symlink on disk for SCM-SYM- to detect. The detection itself is exercised
+	// by the other assertions above on every platform.
+	if !hasSCMSym && runtime.GOOS != "windows" {
 		t.Error("expected at least one SCM-SYM- finding from symlink fixtures")
 	}
 }

@@ -254,6 +254,12 @@ func groupFindingsByArtifact(report model.Report, tmpRoot string) map[string]map
 			continue
 		}
 		artID := parts[0]
+		// A leading separator splits to an empty first element. Bucketing under
+		// "" would silently attribute the finding to no artifact while looking
+		// like a successful match.
+		if artID == "" {
+			continue
+		}
 		if _, ok := result[artID]; !ok {
 			result[artID] = make(map[string]struct{})
 		}

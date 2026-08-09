@@ -17,6 +17,15 @@ func TestFilePathRelativeToRepo(t *testing.T) {
 	if _, ok := filePathRelativeToRepo(repo, "/other/outside.go"); ok {
 		t.Fatal("expected outside path to be rejected")
 	}
+
+	// filepath.IsAbs is false for a rooted path with no volume on Windows.
+	// Without the isRooted check these join onto repoRoot and pass containment,
+	// so a caller-supplied absolute path would be read as repo-relative.
+	for _, outside := range []string{"/etc/passwd", "\\etc\\passwd"} {
+		if _, ok := filePathRelativeToRepo(repo, outside); ok {
+			t.Errorf("expected rooted path %q to be rejected", outside)
+		}
+	}
 }
 
 func TestIsHighSeverityFinding(t *testing.T) {

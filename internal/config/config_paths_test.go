@@ -20,27 +20,37 @@ func TestSkepticDataDirDefaultsToHome(t *testing.T) {
 	}
 }
 
+// These build their expectations with filepath.Join rather than a literal
+// POSIX path. The functions under test join with the OS separator, so a
+// hardcoded "/tmp/x/skeptic" only matches on Unix.
+
 func TestSkepticDataDirRespectsXDG(t *testing.T) {
-	t.Setenv("XDG_DATA_HOME", "/tmp/xdg-test-data")
+	root := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", root)
 	dir := SkepticDataDir()
-	if dir != "/tmp/xdg-test-data/skeptic" {
-		t.Fatalf("SkepticDataDir() = %q, want /tmp/xdg-test-data/skeptic", dir)
+	want := filepath.Join(root, "skeptic")
+	if dir != want {
+		t.Fatalf("SkepticDataDir() = %q, want %q", dir, want)
 	}
 }
 
 func TestSystemConfigPath(t *testing.T) {
-	t.Setenv("XDG_DATA_HOME", "/tmp/xdg-test-sys")
+	root := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", root)
 	p := SystemConfigPath()
-	if p != "/tmp/xdg-test-sys/skeptic/system.json" {
-		t.Fatalf("SystemConfigPath() = %q", p)
+	want := filepath.Join(root, "skeptic", "system.json")
+	if p != want {
+		t.Fatalf("SystemConfigPath() = %q, want %q", p, want)
 	}
 }
 
 func TestProfilesDir(t *testing.T) {
-	t.Setenv("XDG_DATA_HOME", "/tmp/xdg-test-prof")
+	root := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", root)
 	p := ProfilesDir()
-	if p != "/tmp/xdg-test-prof/skeptic/profiles" {
-		t.Fatalf("ProfilesDir() = %q", p)
+	want := filepath.Join(root, "skeptic", "profiles")
+	if p != want {
+		t.Fatalf("ProfilesDir() = %q, want %q", p, want)
 	}
 }
 
@@ -161,19 +171,21 @@ func TestActiveProfilePathEmptyPointer(t *testing.T) {
 }
 
 func TestDefaultSystemConfig(t *testing.T) {
-	t.Setenv("XDG_DATA_HOME", "/tmp/xdg-default-sys")
+	root := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", root)
+	base := filepath.Join(root, "skeptic")
 	sys := DefaultSystemConfig()
-	if sys.CacheDir != "/tmp/xdg-default-sys/skeptic/cache" {
-		t.Fatalf("CacheDir: got %q", sys.CacheDir)
+	if want := filepath.Join(base, "cache"); sys.CacheDir != want {
+		t.Fatalf("CacheDir: got %q, want %q", sys.CacheDir, want)
 	}
-	if sys.LogDir != "/tmp/xdg-default-sys/skeptic/logs" {
-		t.Fatalf("LogDir: got %q", sys.LogDir)
+	if want := filepath.Join(base, "logs"); sys.LogDir != want {
+		t.Fatalf("LogDir: got %q, want %q", sys.LogDir, want)
 	}
 	if sys.DaemonBind != "127.0.0.1:7788" {
 		t.Fatalf("DaemonBind: got %q", sys.DaemonBind)
 	}
-	if sys.DaemonTokenDir != "/tmp/xdg-default-sys/skeptic" {
-		t.Fatalf("DaemonTokenDir: got %q", sys.DaemonTokenDir)
+	if sys.DaemonTokenDir != base {
+		t.Fatalf("DaemonTokenDir: got %q, want %q", sys.DaemonTokenDir, base)
 	}
 	if sys.DefaultWorkers != 0 {
 		t.Fatalf("DefaultWorkers: got %d", sys.DefaultWorkers)

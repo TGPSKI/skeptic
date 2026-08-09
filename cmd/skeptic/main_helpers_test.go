@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -51,8 +52,18 @@ func TestResolveScanRootsProfiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve roots failed: %v", err)
 	}
-	if len(roots) != 1 || roots[0] != "/" {
-		t.Fatalf("expected container profile to default to '/', got %v", roots)
+	// The container profile scans the filesystem root. canonicalizePaths makes
+	// that absolute, so on Windows "/" becomes the current volume's root.
+	wantRoot := "/"
+	if runtime.GOOS == "windows" {
+		abs, err := filepath.Abs("/")
+		if err != nil {
+			t.Fatalf("abs: %v", err)
+		}
+		wantRoot = abs
+	}
+	if len(roots) != 1 || roots[0] != wantRoot {
+		t.Fatalf("expected container profile to default to %q, got %v", wantRoot, roots)
 	}
 
 	devRoots, err := resolveScanRoots(".", "", model.ProfileDeveloper)
@@ -340,6 +351,12 @@ func TestEmitReportEmptyOutPathGoesToStdout(t *testing.T) {
 }
 
 func TestEmitReportUnwritableOutPathFails(t *testing.T) {
+	// os.Chmod on Windows toggles only the read-only attribute, which does not
+	// apply to directories, so a 0500 directory still accepts new files. Denying
+	// directory writes needs ACL APIs outside the stdlib.
+	if runtime.GOOS == "windows" {
+		t.Skip("cannot make a directory non-writable on Windows without ACL APIs")
+	}
 	if os.Geteuid() == 0 {
 		t.Skip("running as root: directory permissions do not deny writes")
 	}

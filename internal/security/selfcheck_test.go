@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -48,6 +49,16 @@ func TestCheckWorldWritableArtifacts(t *testing.T) {
 		t.Fatalf("write secure: %v", err)
 	}
 	got := CheckWorldWritableArtifacts([]string{ww, secure, filepath.Join(dir, "missing")})
+
+	// Windows has no POSIX mode bits, so isWorldWritable reports nothing rather
+	// than flagging every writable file. See selfcheck_perm_windows.go.
+	if runtime.GOOS == "windows" {
+		if len(got) != 0 {
+			t.Fatalf("expected no world-writable paths on Windows, got %v", got)
+		}
+		return
+	}
+
 	if len(got) != 1 {
 		t.Fatalf("expected 1 world-writable path, got %v", got)
 	}

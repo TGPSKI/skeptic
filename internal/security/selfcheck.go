@@ -36,6 +36,9 @@ func VerifySelfIntegrity(binaryPath, expectedHash string) error {
 
 // CheckWorldWritableArtifacts scans paths for world-writable sensitive files.
 // Returns paths that are world-writable.
+//
+// On Windows it always returns nil. See isWorldWritable in
+// selfcheck_perm_windows.go for why.
 func CheckWorldWritableArtifacts(paths []string) []string {
 	var out []string
 	for _, p := range paths {
@@ -43,7 +46,7 @@ func CheckWorldWritableArtifacts(paths []string) []string {
 		if err != nil {
 			continue
 		}
-		if info.Mode().Perm()&0o002 != 0 {
+		if isWorldWritable(info) {
 			out = append(out, p)
 		}
 	}

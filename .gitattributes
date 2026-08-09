@@ -1,0 +1,4 @@
+# Check out every file with LF, on every platform. Windows git defaults to
+# core.autocrlf=true, which would rewrite line endings on checkout and break
+# gofmt and any test that hashes or byte-compares a testdata fixture.
+* -text

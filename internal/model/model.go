@@ -5,6 +5,7 @@ package model
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -578,7 +579,9 @@ func ExpandHomePath(path string) string {
 		if path == "~" {
 			return home
 		}
-		return home + path[1:]
+		// filepath.Join, not concatenation: path[1:] carries a forward slash,
+		// which would produce "C:\Users\me/foo/bar" on Windows.
+		return filepath.Join(home, path[2:])
 	}
 	return path
 }
