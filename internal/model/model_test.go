@@ -214,18 +214,23 @@ func TestDefaultConfidenceForRuleID(t *testing.T) {
 		ruleID string
 		want   ConfidenceClass
 	}{
-		// Definitive — every prefix in definitiveRulePrefixes
+		// Definitive — every definitive family in ruleFamilies
 		{"AGT-TRUST-007", ConfidenceDefinitive},
 		{"AGT-MEM-001", ConfidenceDefinitive},
 		{"AGT-OUT-001", ConfidenceDefinitive},
-		{"CI-MUTABLE-001", ConfidenceDefinitive},
 		{"CI-PRT-001", ConfidenceDefinitive},
-		{"CI-EXEC-001", ConfidenceDefinitive},
+		{"CI-EXFIL-001", ConfidenceDefinitive},
+		{"POL-GHA-001", ConfidenceDefinitive},
 		{"GRAPH-003", ConfidenceDefinitive},
 		{"CLOUD-ID-001", ConfidenceDefinitive},
 		{"DISC-MCP-001", ConfidenceDefinitive},
 		{"SCM-TRUST-001", ConfidenceDefinitive},
-		{"NON-CODE-001", ConfidenceDefinitive},
+
+		// Retired phantom families: declared in the tables but never emitted.
+		// They must fall through to heuristic now.
+		{"CI-MUTABLE-001", ConfidenceHeuristic},
+		{"CI-EXEC-001", ConfidenceHeuristic},
+		{"NON-CODE-001", ConfidenceHeuristic},
 
 		// Heuristic — broader pattern/behavioral families fall through
 		{"AGT-SKL-003", ConfidenceHeuristic},
@@ -268,13 +273,20 @@ func TestIsGateEligible(t *testing.T) {
 		{"AGT-MCP-006", ScanModeDeveloper, true},
 		{"AGT-MEM-001", ScanModeDeveloper, true},
 		{"AGT-OUT-001", ScanModeDeveloper, true},
-		{"CI-MUTABLE-001", ScanModeDeveloper, true},
 		{"CI-PRT-001", ScanModeDeveloper, true},
-		{"CI-EXEC-001", ScanModeDeveloper, true},
+		{"CI-EXFIL-001", ScanModeDeveloper, true},
 		{"GRAPH-003", ScanModeDeveloper, true},
 		{"DISC-MCP-001", ScanModeDeveloper, true},
 		{"DOM-TYPO-002", ScanModeDeveloper, true},
 		{"SCM-TRUST-001", ScanModeDeveloper, true},
+
+		// Definitive families that previously displayed at full confidence but
+		// could never fail a build. They gate now.
+		{"CLOUD-ID-001", ScanModeDeveloper, true},
+		{"POL-GHA-001", ScanModeDeveloper, true},
+		{"POL-GHA-003", ScanModeDeveloper, true},
+		{"CI-ABUSE-002", ScanModeDeveloper, true},
+		{"CI-SECRET-001", ScanModeDeveloper, true},
 
 		// Developer mode — non-wedge families are ineligible
 		{"ATK-EXE-001", ScanModeDeveloper, false},
@@ -282,7 +294,11 @@ func TestIsGateEligible(t *testing.T) {
 		{"ENC-OBFUSC-001", ScanModeDeveloper, false},
 		{"ENC-ENTROPY-001", ScanModeDeveloper, false},
 		{"COR-001", ScanModeDeveloper, false},
-		{"CLOUD-ID-001", ScanModeDeveloper, false},
+		{"DRIFT-TREND-001", ScanModeDeveloper, false},
+
+		// Retired phantom families no longer gate.
+		{"CI-MUTABLE-001", ScanModeDeveloper, false},
+		{"CI-EXEC-001", ScanModeDeveloper, false},
 		{"NON-CODE-001", ScanModeDeveloper, false},
 
 		// IR and deep — nothing is gate-eligible

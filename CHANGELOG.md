@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.3.0 — unreleased
+
+### Fixed
+
+- Gate `CLOUD-ID-` and `POL-GHA-` findings in developer mode. Both were
+  classified `definitive` but omitted from gate eligibility, so a workflow with
+  `permissions: write-all` produced two HIGH findings and exited `0` under
+  `--preset ci --fail-on high` (#55)
+- Remove rule families `CI-MUTABLE-`, `CI-EXEC-`, and `NON-CODE-`. They were
+  declared in the confidence and gating tables and documented as shipping, but
+  no rule emitted them; `SCM-TRUST-001` and `CI-ABUSE-*` cover those conditions
+  (#57)
+
+### Changed
+
+- Confidence class and gate eligibility now come from one `ruleFamilies` table.
+  A definitive family must gate or record an `UngatedReason` (#55)
+- Gate `CI-ABUSE-` and `CI-SECRET-` in developer mode (#55)
+
+### Added
+
+- Warn on a passing run when findings at or above `--fail-on` were excluded by
+  gate eligibility, naming the rule IDs (#55)
+- `model.RuleFamilies()` and `model.GateSuppressedRuleIDs()` (#55)
+
 ## v0.2.1 — 2026-05-19
 
 ### Documentation
@@ -44,10 +69,11 @@ Initial public release.
 
 ### Rule families
 
-- **CI/CD** (CI-BUILD, CI-ENV, CI-GOV, CI-DEPBOT, CI-MUTABLE, CI-PRT, CI-EXEC,
-  CI-SECRET): build hygiene, environment exposure, governance gaps,
-  dependency-bot attack surface, mutable action refs, pull request target abuse,
-  execution injection, secret hygiene
+- **CI/CD** (CI-BUILD, CI-ENV, CI-GOV, CI-DEPBOT, CI-PRT, CI-ABUSE, CI-EXFIL,
+  CI-SECRET, POL-GHA, SCM-TRUST): build hygiene, environment exposure,
+  governance gaps, dependency-bot attack surface, pull request target abuse,
+  execution injection, credential exfiltration, secret hygiene, workflow policy,
+  mutable action refs
 - **Agentic** (AGT-SKL, AGT-MCP, AGT-MEM, AGT-OUT, AGT-TRUST, AGT-ART):
   SKILL.md directive injection, MCP tool shadowing and credential interpolation,
   memory persistence poisoning, tool-output instruction injection,

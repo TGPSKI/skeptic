@@ -170,35 +170,105 @@ func ParseConfidenceClass(raw string) (ConfidenceClass, error) {
 	}
 }
 
+// RuleFamily declares how one rule-ID prefix is classified. Confidence and gate
+// eligibility are declared together, in one table, so a family cannot be
+// definitive-confidence and silently ungated — that split is what let
+// HIGH/definitive CLOUD-ID and POL-GHA findings pass a `--fail-on high` run.
+type RuleFamily struct {
+	// Prefix is the uppercase rule-ID prefix, including the trailing dash.
+	Prefix string
+	// Confidence is the default class for findings in this family that do not
+	// set ConfidenceClass explicitly.
+	Confidence ConfidenceClass
+	// GatesInDeveloper reports whether findings in this family can cross the
+	// --fail-on threshold in developer mode.
+	GatesInDeveloper bool
+	// UngatedReason explains why a definitive family does not gate. It must be
+	// non-empty whenever Confidence is definitive and GatesInDeveloper is false;
+	// TestDefinitiveFamiliesGateOrExplain enforces that.
+	UngatedReason string
+}
+
+// ruleFamilies is the single source of truth for confidence defaults and
+// developer-mode gate eligibility.
+//
+// Invariants, enforced by tests in this package:
+//   - every Prefix is emitted by at least one rule, check, or bundled rulepack
+//   - definitive families either gate or carry an UngatedReason
+//
+// Adding a prefix here without shipping a rule that emits it makes the gate look
+// broader than it is; three such phantom families (CI-MUTABLE-, CI-EXEC-,
+// NON-CODE-) were removed when this table was introduced.
+var ruleFamilies = []RuleFamily{
+	// Agentic ecosystem poisoning — the primary wedge.
+	{Prefix: "AGT-TRUST-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+	{Prefix: "AGT-MEM-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+	{Prefix: "AGT-OUT-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+	{Prefix: "AGT-SKL-", Confidence: ConfidenceHeuristic, GatesInDeveloper: true},
+	{Prefix: "AGT-MCP-", Confidence: ConfidenceHeuristic, GatesInDeveloper: true},
+	{Prefix: "DISC-MCP-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+
+	// CI/CD trust boundaries.
+	{Prefix: "CI-PRT-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+	{Prefix: "CI-EXFIL-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+	{Prefix: "CI-ABUSE-", Confidence: ConfidenceHeuristic, GatesInDeveloper: true},
+	{Prefix: "CI-SECRET-", Confidence: ConfidenceHeuristic, GatesInDeveloper: true},
+	{Prefix: "POL-GHA-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+
+	// Supply chain structural hygiene.
+	{Prefix: "SCM-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+	{Prefix: "DOM-TYPO-", Confidence: ConfidenceHeuristic, GatesInDeveloper: true},
+
+	// Machine identity.
+	{Prefix: "GRAPH-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+	{Prefix: "CLOUD-ID-", Confidence: ConfidenceDefinitive, GatesInDeveloper: true},
+
+	// Correlation output. Correlated findings are derived from other findings;
+	// gating on them would double-count whatever already gated underneath.
+	{
+		Prefix: "COR-", Confidence: ConfidenceCorrelated, GatesInDeveloper: false,
+		UngatedReason: "derived from other findings; the underlying finding gates instead",
+	},
+	{
+		Prefix: "DRIFT-", Confidence: ConfidenceCorrelated, GatesInDeveloper: false,
+		UngatedReason: "drift is a trend signal against a baseline, not a standalone defect",
+	},
+}
+
+// lookupRuleFamily returns the longest matching family for a rule ID.
+// Longest-match keeps a specific prefix (CI-PRT-) authoritative over any
+// broader one that might later be added (CI-).
+func lookupRuleFamily(ruleID string) (RuleFamily, bool) {
+	upper := strings.ToUpper(strings.TrimSpace(ruleID))
+	var best RuleFamily
+	found := false
+	for _, fam := range ruleFamilies {
+		if !strings.HasPrefix(upper, fam.Prefix) {
+			continue
+		}
+		if !found || len(fam.Prefix) > len(best.Prefix) {
+			best = fam
+			found = true
+		}
+	}
+	return best, found
+}
+
+// RuleFamilies returns a copy of the declared rule-family table.
+func RuleFamilies() []RuleFamily {
+	out := make([]RuleFamily, len(ruleFamilies))
+	copy(out, ruleFamilies)
+	return out
+}
+
 // DefaultConfidenceForRuleID derives confidence class from a rule ID prefix.
 // Structural wedge rules default to definitive; broad pattern/behavioral rules
 // default to heuristic; correlation rules default to correlated.
 func DefaultConfidenceForRuleID(ruleID string) ConfidenceClass {
-	upper := strings.ToUpper(ruleID)
-	for _, p := range definitiveRulePrefixes {
-		if strings.HasPrefix(upper, p) {
-			return ConfidenceDefinitive
-		}
-	}
-	for _, p := range correlatedRulePrefixes {
-		if strings.HasPrefix(upper, p) {
-			return ConfidenceCorrelated
-		}
+	if fam, ok := lookupRuleFamily(ruleID); ok {
+		return fam.Confidence
 	}
 	return ConfidenceHeuristic
-}
-
-var definitiveRulePrefixes = []string{
-	"AGT-TRUST-", "AGT-MEM-", "AGT-OUT-",
-	"CI-MUTABLE-", "CI-PRT-", "CI-EXEC-", "CI-EXFIL-",
-	"GRAPH-", "CLOUD-ID-",
-	"DISC-MCP-",
-	"SCM-",
-	"NON-CODE-",
-}
-
-var correlatedRulePrefixes = []string{
-	"COR-", "DRIFT-",
 }
 
 // --- ScanMode ---
@@ -235,13 +305,8 @@ func IsGateEligible(ruleID string, mode ScanMode) bool {
 	}
 	switch mode {
 	case ScanModeDeveloper:
-		upper := strings.ToUpper(ruleID)
-		for _, p := range gateEligibleDeveloperPrefixes {
-			if strings.HasPrefix(upper, p) {
-				return true
-			}
-		}
-		return false
+		fam, ok := lookupRuleFamily(ruleID)
+		return ok && fam.GatesInDeveloper
 	case ScanModeIR, ScanModeDeep:
 		return false
 	default:
@@ -249,13 +314,34 @@ func IsGateEligible(ruleID string, mode ScanMode) bool {
 	}
 }
 
-var gateEligibleDeveloperPrefixes = []string{
-	"AGT-TRUST-", "AGT-SKL-", "AGT-MEM-", "AGT-OUT-", "AGT-MCP-",
-	"CI-MUTABLE-", "CI-PRT-", "CI-EXEC-", "CI-EXFIL-",
-	"GRAPH-",
-	"DISC-MCP-",
-	"DOM-TYPO-",
-	"SCM-",
+// GateSuppressedRuleIDs returns the distinct rule IDs that met the severity
+// threshold but were excluded from gating by family eligibility, in first-seen
+// order. Callers surface these so a passing run never hides the fact that
+// qualifying findings were present — silent fail-open is the worst property a
+// security gate can have.
+func GateSuppressedRuleIDs(findings []Finding, failOn Severity, mode ScanMode) []string {
+	if failOn == SeverityNone || mode == "" {
+		return nil
+	}
+	seen := make(map[string]struct{}, 8)
+	var out []string
+	for _, f := range findings {
+		if f.Suppressed {
+			continue
+		}
+		if SeverityWeight(f.Severity) < SeverityWeight(failOn) {
+			continue
+		}
+		if IsGateEligible(f.RuleID, mode) {
+			continue
+		}
+		if _, dup := seen[f.RuleID]; dup {
+			continue
+		}
+		seen[f.RuleID] = struct{}{}
+		out = append(out, f.RuleID)
+	}
+	return out
 }
 
 // FilterFindingsByMode applies mode-driven presentation filtering.

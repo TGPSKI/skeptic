@@ -139,8 +139,10 @@ internal/security    →  (stdlib only)
 
 - **`ConfidenceClass`** — `definitive`, `heuristic`, or `correlated`; stored on each `Finding` (and optional override on `Rule`). Default derivation: `DefaultConfidenceForRuleID(ruleID)` from rule ID prefix (wedge/structural prefixes → definitive, `COR-`/`DRIFT-` → correlated, else heuristic).
 - **`ScanMode`** — `developer` (default), `ir`, or `deep`; carried on `ScanOptions.Mode` and `Report.Mode`. Modes apply before presets in config resolution (`ModePresetValues`).
-- **`DefaultConfidenceForRuleID`** — maps a rule ID to a default `ConfidenceClass` for rules that do not set an override.
-- **`IsGateEligible(ruleID, mode)`** — in `developer` mode, only wedge-family prefixes can contribute to `--fail-on` exit-code gating; `ir` and `deep` treat gating as non-eligible for failure (advisory).
+- **`ruleFamilies`** (`internal/model/model.go`) — rule-family classification. Each entry declares a prefix, its default `ConfidenceClass`, whether it gates in developer mode, and, for definitive families that do not gate, an `UngatedReason`. **Add new rule families here.** Tests enforce that every declared prefix is emitted by some rule or check, and that definitive families gate or explain why they do not.
+- **`DefaultConfidenceForRuleID`** — resolves a rule ID against `ruleFamilies` by longest matching prefix, for rules that do not set an override.
+- **`IsGateEligible(ruleID, mode)`** — in `developer` mode, only families with `GatesInDeveloper` can contribute to `--fail-on` exit-code gating; `ir` and `deep` treat gating as non-eligible for failure (advisory).
+- **`GateSuppressedRuleIDs`** — rule IDs that met the severity threshold but were excluded by gate eligibility. The CLI logs these as a `WARN` on an otherwise-passing run.
 - **`FilterFindingsByMode`** — presentation filter after detection: in `developer`, show definitive + correlated at all severities, heuristic only at critical; `ir`/`deep` show all.
 - **`FilterFindingsByThreatMode`** — filters findings by threat domain when `--threat-mode` is not `all`.
 - **`internal/mcp.BuildTrustAssessment`** — exported helper building the `trust_assessment` object for MCP (`verdict`, counts, `risk_areas`, `review_priority`).

@@ -96,7 +96,9 @@ Three modes—`developer` (default), `ir`, and `deep`—sit **above** presets in
 
 Modes compose with scan style (`pattern` \| `behavior` \| `hybrid`), threat mode (`all` \| `machine-identity` \| `ai-workload`), and `--fail-on` as follows: mode defaults apply first for unset flags, then preset, then config file, then explicit CLI (see [CONFIGURATION.md](CONFIGURATION.md)).
 
-**Gating:** `IsGateEligible` limits which rule families can contribute to exit-code failure in `developer` mode (wedge families such as `SCM-`, `CI-MUTABLE-`, `CI-EXFIL-`, `AGT-*` skill/memory surfaces, `GRAPH-`, `DISC-MCP-`, `DOM-TYPO-`). In `ir` and `deep`, no rule family is gate-eligible—`--fail-on` still runs but only gate-eligible findings count toward threshold, so these modes stay advisory unless you switch mode or change eligibility semantics later.
+**Gating:** `IsGateEligible` limits which rule families can contribute to exit-code failure in `developer` mode. Eligibility is declared alongside confidence in the `ruleFamilies` table in `internal/model/model.go`; the wedge families are `SCM-`, `CI-PRT-`, `CI-EXFIL-`, `CI-ABUSE-`, `CI-SECRET-`, `POL-GHA-`, `AGT-*` skill/memory/trust surfaces, `GRAPH-`, `CLOUD-ID-`, `DISC-MCP-`, and `DOM-TYPO-`. A test enforces that a definitive family either gates or records an `UngatedReason`. In `ir` and `deep`, no rule family is gate-eligible—`--fail-on` still runs but only gate-eligible findings count toward threshold, so these modes stay advisory unless you switch mode or change eligibility semantics later.
+
+When a run passes but findings at or above `--fail-on` were excluded by eligibility, the CLI logs a `WARN` naming the rule IDs.
 
 **Presentation filtering:** After detection and enrichment, `FilterFindingsByMode` may narrow the findings attached to the report. In `developer`, definitive and correlated findings are always shown; heuristic findings appear only at critical severity. In `ir` and `deep`, all severities are shown. This is a **presentation** decision—the engine still runs the full pipeline; filtering runs after correlation on the collected finding set.
 

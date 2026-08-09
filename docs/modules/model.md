@@ -70,7 +70,9 @@ Threat-mode filtering (`FindingMatchesThreatMode`, `FilterFindingsByThreatMode`)
 
 ### Confidence taxonomy
 
-`ConfidenceClass` describes epistemic strength, not risk. `DefaultConfidenceForRuleID` maps rule ID prefixes to defaults: structural wedge prefixes (`AGT-TRUST-`, `SCM-`, `GRAPH-`, `CI-MUTABLE-`, etc.) → `definitive`; `COR-`/`DRIFT-` → `correlated`; everything else (including `AGT-SKL-`, `ATK-`, `BHV-`, `TPCP-IOC-`) → `heuristic`. Rules may override via the optional `Rule.ConfidenceClass` field. Confidence affects presentation and summarization; mode/family/severity affect blocking.
+`ConfidenceClass` describes epistemic strength, not risk. Confidence defaults and developer-mode gate eligibility are declared together in the `ruleFamilies` table, so a family cannot present at full confidence while being unable to fail a build. `DefaultConfidenceForRuleID` resolves a rule ID against that table by longest matching prefix: structural wedge prefixes (`AGT-TRUST-`, `SCM-`, `GRAPH-`, `CLOUD-ID-`, `CI-PRT-`, `POL-GHA-`, etc.) → `definitive`; `COR-`/`DRIFT-` → `correlated`; everything else (including `AGT-SKL-`, `ATK-`, `BHV-`, `TPCP-IOC-`) → `heuristic`. Rules may override via the optional `Rule.ConfidenceClass` field. Confidence affects presentation and summarization; mode/family/severity affect blocking.
+
+`RuleFamilies()` returns a copy of the table. Package tests enforce that prefixes are uppercase and dash-terminated, that every declared prefix is emitted by some non-test source, and that a definitive family either gates or records an `UngatedReason`.
 
 ### Operating modes
 
