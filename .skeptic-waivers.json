@@ -62,7 +62,7 @@
     {
       "rule_id": "SCM-TRUST-001",
       "file_path": "README.md",
-      "file_sha256": "e0b89ae263b5eaa43f400fbb0e586a91bd5c2e0251a1d72c5e31e65382159a06",
+      "file_sha256": "6142fcfb8ab77691e2caeef7013d0f0dda489011109d93331e8f6fc64a3ab20c",
       "finding_keys": [
         "SCM-TRUST-001|README.md|10f8d64380058da2",
         "SCM-TRUST-001|README.md|af1a9bb67fc40175"

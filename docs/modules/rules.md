@@ -98,7 +98,7 @@ Built-in rules are defined across five themed files, each containing one or more
 
 | File | Functions | Rules |
 |------|-----------|------:|
-| `rules_behavioral_signals.go` | `behavioralSignalsRules` | 82 |
+| `rules_behavioral_signals.go` | `behavioralSignalsRules` | 80 |
 | `rules_agentic_surfaces.go` | `agenticSurfacesRules` (includes `agenticTrustLaunderingRules`) | 67 |
 | `rules_non_code_surfaces.go` | `nonCodeSurfacesRules` | 26 |
 | `rules_identity_exposure.go` | `infrastructureCredentialExposureRules`, `machineIdentityPolicyRules` | 7 |

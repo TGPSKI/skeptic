@@ -53,8 +53,6 @@ The scanner covers attack vectors in the gaps between existing tools:
 - **Not a secret scanner.** Use Gitleaks or trufflehog for credential leak detection.
 - **Not an EDR.** Scans files at rest, not runtime behavior.
 
-Run `skeptic` alongside these tools to detect the gaps they don't cover.
-
 For CI workflows, the closest adjacent tools have different jobs: **zizmor** audits GitHub Actions security, **actionlint** checks workflow syntax and expressions, **Poutine** scans CI pipeline misconfigurations across platforms, and **OpenSSF Scorecard** assesses broader project supply-chain practices. skeptic focuses on structural trust-boundary conditions and agentic/machine-identity surfaces, and complements rather than replaces them.
 
 See the [documentation index](docs/README.md) for user, operator, contributor, and agent guides.
@@ -429,4 +427,3 @@ Full flag list: `skeptic --help` or see [docs/CONFIGURATION.md](docs/CONFIGURATI
 | `verify-bundle`     | Verify signed distribution bundle             |
 | `completion`        | Shell completions (bash, zsh, fish)           |
 | `version`           | Print build info and rule count               |
-

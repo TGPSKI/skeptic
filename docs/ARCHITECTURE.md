@@ -52,9 +52,9 @@ Built-in rules are split across themed files under `internal/rules/`. The packag
 
 | File | Rules | Role |
 |------|-------|------|
-| `rules_behavioral_signals.go` | 82 | Encoded payload, obfuscation, CI abuse, container escape, structural exfil/memory/sweep/stego signals (`CI-EXFIL-*`, `ATK-MEM-*`, `ATK-SWEEP-*`, `ENC-STEGO-*`, …), and related behavioral patterns |
+| `rules_behavioral_signals.go` | 80 | Encoded payload, obfuscation, CI abuse, container escape, structural exfil/memory/sweep/stego signals (`CI-EXFIL-*`, `ATK-MEM-*`, `ATK-SWEEP-*`, `ENC-STEGO-*`, …), and related behavioral patterns |
 | `rules_agentic_surfaces.go` | 67 | Agentic/LLM poisoning surfaces, MCP abuse patterns, trust-laundering (`AGT-TRUST-001`–`018`, including “nobody reviews this” surfaces), memory poisoning, tool-output injection |
-| `rules_non_code_surfaces.go` | 28 | Non-code attack surfaces: git metadata, package-manager config, IDE/devcontainer vectors, plus structural CI/SCM workflow signals (`CI-PRT-*`, `SCM-TAG-*`) |
+| `rules_non_code_surfaces.go` | 26 | Non-code attack surfaces: git metadata, package-manager config, IDE/devcontainer vectors, plus structural SCM workflow signals (`SCM-TAG-*`) |
 | `rules_identity_exposure.go` | 7 | IaC and machine-identity policy risk signals |
 | `rules_attack_tactics.go` | 45 | ATT&CK tactic coverage heuristics (`ATK-K8S-*`, `ATK-PER-*`, `ATK-IMDS-*`, `ATK-C2-*`, `ATK-WIPER-*`, …) |
 
