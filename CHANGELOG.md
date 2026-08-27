@@ -20,6 +20,8 @@
 - Record stable finding identities in file-pinned waivers. Waiver refreshes now
   stop for review when a file introduces a new finding while allowing unchanged
   accepted finding sets to be re-pinned mechanically (#100).
+- Make release preparation select a successful CI run for the release commit
+  instead of failing on a newer label-triggered skipped run.
 
 ### CLI
 

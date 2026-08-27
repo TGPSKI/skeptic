@@ -51,7 +51,7 @@
     {
       "rule_id": "POL-GHA-004",
       "file_path": ".github/workflows/release.yml",
-      "file_sha256": "576220f30d5c56d8d64992d45ceb499226d7692ce9b5446983b654200e535878",
+      "file_sha256": "8bfb00317a460f6d61bab2c0afa5dce6e87fcd581105d6c1cbddfb0372b4cbf3",
       "finding_keys": [
         "POL-GHA-004|.github/workflows/release.yml|12ebd5a977b9dbc0"
       ],
