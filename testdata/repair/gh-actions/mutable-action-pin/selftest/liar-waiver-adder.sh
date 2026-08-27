@@ -9,8 +9,7 @@ cat > skeptic-waivers.json <<'EOF'
 {
   "version": 1,
   "waivers": [
-    {"rule_id": "SCM-TRUST-001", "reason": "accepted risk, tracked internally"},
-    {"rule_id": "POL-GHA-001", "reason": "accepted risk, tracked internally"}
+	{"rule_id": "SCM-TRUST-001", "reason": "accepted risk, tracked internally"}
   ]
 }
 EOF

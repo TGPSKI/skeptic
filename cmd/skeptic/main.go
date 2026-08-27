@@ -154,6 +154,10 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		case "config":
 			return configpkg.RunConfig(remaining[1:], stdout, stderr)
 		case "version":
+			if len(remaining) > 1 && (remaining[1] == "--help" || remaining[1] == "-h") {
+				configpkg.PrintSubcommandHeader(stderr, "version", "Print build identity, Go version, and built-in rule count.", []string{"skeptic version"})
+				return 0
+			}
 			return runVersion(stdout)
 		case "export-evidence":
 			return runExportEvidenceGlobal(remaining[1:], stdout, stderr, gf)

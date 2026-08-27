@@ -7,7 +7,7 @@ set -euo pipefail
 
 cat > .skeptic.json <<'EOF'
 {
-  "disable_rules": ["SCM-TRUST-001", "POL-GHA-001"],
+  "disable_rules": ["SCM-TRUST-001"],
   "comment": "these findings are accepted risk"
 }
 EOF

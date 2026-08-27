@@ -95,7 +95,7 @@ Some finding families are emitted by `internal/checks/` rather than rule files:
 - `DOM-TYPO-001`–`003`: structural domain typosquat (emitted by `internal/checks/domain_checks.go`)
 - `DEP-TYPO-001`–`002`: dependency typosquat (emitted by `internal/checks/dep_checks.go`)
 - `GRAPH-001`–`010`, `MID-*`: identity graph findings (emitted by `internal/checks/graph*.go`)
-- `POL-GHA-001`, `POL-DOCKER-001`: policy checks (emitted by `internal/checks/policy_checks.go`)
+- `POL-GHA-002`–`004`, `POL-DOCKER-001`: policy checks (emitted by `internal/checks/policy_checks.go`)
 - `BHV-*`: behavior chain findings (emitted by `internal/checks/behavior_checks.go`)
 - `COR-*`, `DRIFT-*`: correlation findings (emitted by `internal/correlation/`)
 

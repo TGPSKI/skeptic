@@ -18,97 +18,58 @@
     {
       "rule_id": "AGT-MCP-004",
       "file_path": ".agents/skills/threat-rules-ingestion/SKILL.md",
+      "file_sha256": "a10f8191c5aa6ccd2bf0f6abdc225a100d74ff053e0e92f5ae08b4416d0ecad8",
+      "finding_keys": [
+        "AGT-MCP-004|.agents/skills/threat-rules-ingestion/SKILL.md|104a998581a5a29e"
+      ],
       "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "a10f8191c5aa6ccd2bf0f6abdc225a100d74ff053e0e92f5ae08b4416d0ecad8"
-    },
-    {
-      "rule_id": "AGT-SKL-003",
-      "file_path": ".agents/skills/threat-rules-ingestion/SKILL.md",
-      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "a10f8191c5aa6ccd2bf0f6abdc225a100d74ff053e0e92f5ae08b4416d0ecad8"
-    },
-    {
-      "rule_id": "SCM-TRUST-001",
-      "file_path": ".agents/skills/workflow-action-updates/SKILL.md",
-      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "4eee77aa4333bcb5be7c78a54eddb0695667ab6dfbd7e1be448f120aa12aa745"
-    },
-    {
-      "rule_id": "COR-001",
-      "file_path": ".github/workflows",
-      "reason": "Correlation over findings that are individually waived above. Correlation runs on the unsuppressed set, so the aggregate survives suppression of every constituent. Tracked in #91.",
       "author": "TGPSKI",
       "created_at": "2026-08-09T00:00:00Z"
     },
     {
-      "rule_id": "CI-PRT-002",
-      "file_path": ".github/workflows/action-integration-test.yml",
-      "reason": "Audited: the trigger is the unprivileged PR event, so the job runs in the fork context with contents: read and no secrets. head.sha is a hex digest passed through env: into git diff and cannot carry a payload. Rule refinement tracked in #90.",
+      "rule_id": "AGT-SKL-003",
+      "file_path": ".agents/skills/threat-rules-ingestion/SKILL.md",
+      "file_sha256": "a10f8191c5aa6ccd2bf0f6abdc225a100d74ff053e0e92f5ae08b4416d0ecad8",
+      "finding_keys": [
+        "AGT-SKL-003|.agents/skills/threat-rules-ingestion/SKILL.md|f7b0d1eefb8af8ee"
+      ],
+      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "a29518abd6d281ede0f441a75eeef150143ac9e4664b4b82c3ff83cb1904ab11"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
-      "rule_id": "CI-PRT-001",
-      "file_path": ".github/workflows/auto-label.yml",
-      "reason": "Audited: the checkout step sets no ref:, so the privileged PR trigger checks out the base commit rather than PR head. sparse-checkout is limited to CODEOWNERS and OWNERS, permissions grant only pull-requests: write, and the PR author reaches the script through env:. No PR-authored code executes. Rule refinement tracked in #90.",
+      "rule_id": "SCM-TRUST-001",
+      "file_path": ".agents/skills/workflow-action-updates/SKILL.md",
+      "file_sha256": "4eee77aa4333bcb5be7c78a54eddb0695667ab6dfbd7e1be448f120aa12aa745",
+      "finding_keys": [
+        "SCM-TRUST-001|.agents/skills/workflow-action-updates/SKILL.md|187f0380db28d2fb"
+      ],
+      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "cbb84a588dc76ff4ece2c533ee5447fe011bdb3b176b61145da9ca8a85f101d8"
-    },
-    {
-      "rule_id": "POL-CLOUDID-001",
-      "file_path": ".github/workflows/release.yml",
-      "reason": "False positive: the match is the subject-path input of actions/attest-build-provenance, which names files to attest, not an OIDC subject claim. Rule refinement tracked in #91.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "576220f30d5c56d8d64992d45ceb499226d7692ce9b5446983b654200e535878"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "POL-GHA-004",
       "file_path": ".github/workflows/release.yml",
+      "file_sha256": "576220f30d5c56d8d64992d45ceb499226d7692ce9b5446983b654200e535878",
+      "finding_keys": [
+        "POL-GHA-004|.github/workflows/release.yml|12ebd5a977b9dbc0"
+      ],
       "reason": "Audited and accepted: the release job needs contents: write to create the release and id-token: write to attest the archives with Sigstore. It is workflow_dispatch-only and gated on CODEOWNERS membership, so no untrusted input reaches it. Attesting without both permissions is not possible (#4).",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "576220f30d5c56d8d64992d45ceb499226d7692ce9b5446983b654200e535878"
-    },
-    {
-      "rule_id": "CI-PRT-001",
-      "file_path": "AGENTS.md",
-      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "50422351b9728389ebb9c0d3f3137fea1600f5ebbd07014cd1fe6f0d6c9bd76a"
-    },
-    {
-      "rule_id": "CI-PRT-001",
-      "file_path": "CONTRIBUTING.md",
-      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "73aa152b8da754f5166b70528ff73d98be5b8058299e4017b7873c0928841f05"
-    },
-    {
-      "rule_id": "CI-PRT-001",
-      "file_path": "README.md",
-      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "b7b03d2aa53b054298a574b253a1dc988b7be7e056cd64b1ff92080f0a7706f4"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "SCM-TRUST-001",
       "file_path": "README.md",
+      "file_sha256": "e0b89ae263b5eaa43f400fbb0e586a91bd5c2e0251a1d72c5e31e65382159a06",
+      "finding_keys": [
+        "SCM-TRUST-001|README.md|10f8d64380058da2",
+        "SCM-TRUST-001|README.md|af1a9bb67fc40175"
+      ],
       "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "b7b03d2aa53b054298a574b253a1dc988b7be7e056cd64b1ff92080f0a7706f4"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "COR-FILE-001",
@@ -118,60 +79,38 @@
       "created_at": "2026-08-09T00:00:00Z"
     },
     {
-      "rule_id": "CI-PRT-001",
-      "file_path": "cmd/skeptic/doc.go",
-      "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "e51bacb027c386de38972dfa04b5c94763b0fcf71008e9465e39ecefd46c06d4"
-    },
-    {
-      "rule_id": "CI-PRT-001",
-      "file_path": "doc.go",
-      "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "f923862a307b983019c77b816c66f6788acb5532e89762a310ea8b4865477738"
-    },
-    {
-      "rule_id": "POL-CLOUDID-001",
-      "file_path": "docs/ARCHITECTURE.md",
-      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "46d98541ff89ee8388df82e3be451e3804877f36c1954f1a324f35fa36e1d408"
-    },
-    {
       "rule_id": "AGT-MCP-004",
       "file_path": "docs/CONFIGURATION.md",
+      "file_sha256": "300a0d9bcf90c4728cf97bd5355a636e63b77288805a439713c1b802d9b50367",
+      "finding_keys": [
+        "AGT-MCP-004|docs/CONFIGURATION.md|bfdb70a9ea138568"
+      ],
       "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "bf7effa29451b90c3c3c4859710fddd274b8d454e1d72601758d22de9de7569d"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "SCM-TRUST-001",
       "file_path": "docs/GITHUB_ACTION.md",
+      "file_sha256": "ad20b858e3822ecdf05363ebac9546ad251f07636dad1e697c42f4b0b105b96b",
+      "finding_keys": [
+        "SCM-TRUST-001|docs/GITHUB_ACTION.md|10f8d64380058da2",
+        "SCM-TRUST-001|docs/GITHUB_ACTION.md|af1a9bb67fc40175"
+      ],
       "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "f061415aa27b9146f5167e4e13340ae4f20596f59584890a701c41ce1f4c80fd"
-    },
-    {
-      "rule_id": "CLOUD-ID-001",
-      "file_path": "docs/modules/checks.md",
-      "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
-      "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "ba3684cea4644681b46bb74b44da91d73f26b8e21cda60209c3d8ba23ef05ed2"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "BHV-ORD-002",
       "file_path": "docs/product-shaping-memo.md",
+      "file_sha256": "9ce4b1d90d536464c54650408d475d6b56ccd504c691ce0dbc724e58ab7308a1",
+      "finding_keys": [
+        "BHV-ORD-002|docs/product-shaping-memo.md|46b1568414a2e39b"
+      ],
       "reason": "Documented usage example. The mutable ref or agent directive is the subject of the prose, not a configuration this repository executes.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "9ce4b1d90d536464c54650408d475d6b56ccd504c691ce0dbc724e58ab7308a1"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "COR-FILE-001",
@@ -183,58 +122,156 @@
     {
       "rule_id": "AGT-OUT-003",
       "file_path": "internal/ingest/generators.go",
+      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e",
+      "finding_keys": [
+        "AGT-OUT-003|internal/ingest/generators.go|2cdad704edc93ecd",
+        "AGT-OUT-003|internal/ingest/generators.go|bc73f080bd0631a2"
+      ],
       "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "AGT-SKL-003",
       "file_path": "internal/ingest/generators.go",
+      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e",
+      "finding_keys": [
+        "AGT-SKL-003|internal/ingest/generators.go|a3e3d68fe8f923bd",
+        "AGT-SKL-003|internal/ingest/generators.go|bc73f080bd0631a2"
+      ],
       "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "AGT-SKL-004",
       "file_path": "internal/ingest/generators.go",
+      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e",
+      "finding_keys": [
+        "AGT-SKL-004|internal/ingest/generators.go|bc73f080bd0631a2",
+        "AGT-SKL-004|internal/ingest/generators.go|eb622150597f2cc1"
+      ],
       "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "AGT-SKL-015",
       "file_path": "internal/ingest/generators.go",
+      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e",
+      "finding_keys": [
+        "AGT-SKL-015|internal/ingest/generators.go|2cdad704edc93ecd",
+        "AGT-SKL-015|internal/ingest/generators.go|bc73f080bd0631a2"
+      ],
       "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "AGT-SKL-004",
       "file_path": "internal/scan/decoders.go",
+      "file_sha256": "5ec9ebc8ad7a4dc356eb37a9d1d9c33f369e62e0f1a386e21d6e0f37cb6b18d9",
+      "finding_keys": [
+        "AGT-SKL-004|internal/scan/decoders.go|37f8cdc212e7fe13",
+        "AGT-SKL-004|internal/scan/decoders.go|fbb599987bcd8d67"
+      ],
       "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "5ec9ebc8ad7a4dc356eb37a9d1d9c33f369e62e0f1a386e21d6e0f37cb6b18d9"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "ENC-POLYGLOT-001",
       "file_path": "internal/scan/polyglot.go",
+      "file_sha256": "dc971e452a3ac7ec2855595a10a80051559c09f65195880ce0d98c6f4896be4c",
+      "finding_keys": [
+        "ENC-POLYGLOT-001|internal/scan/polyglot.go|cb72d7e8fea2930f"
+      ],
       "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "dc971e452a3ac7ec2855595a10a80051559c09f65195880ce0d98c6f4896be4c"
+      "created_at": "2026-08-09T00:00:00Z"
     },
     {
       "rule_id": "CLOUD-ID-003",
       "file_path": "internal/security/security.go",
+      "file_sha256": "5299b898275590e94636454ebcfdecbba0f11fb2e8631320714c5f3f39ba0b5e",
+      "finding_keys": [
+        "CLOUD-ID-003|internal/security/security.go|1620bfc7631ef605"
+      ],
       "reason": "Detection pattern literal in the scanner's own source. The rule matches the string it is built to find.",
       "author": "TGPSKI",
-      "created_at": "2026-08-09T00:00:00Z",
-      "file_sha256": "5299b898275590e94636454ebcfdecbba0f11fb2e8631320714c5f3f39ba0b5e"
+      "created_at": "2026-08-09T00:00:00Z"
+    },
+    {
+      "rule_id": "AGT-TRUST-005",
+      "file_path": ".agents/skills/threat-rules-ingestion/SKILL.md",
+      "file_sha256": "a10f8191c5aa6ccd2bf0f6abdc225a100d74ff053e0e92f5ae08b4416d0ecad8",
+      "finding_keys": [
+        "AGT-TRUST-005|.agents/skills/threat-rules-ingestion/SKILL.md|f7b0d1eefb8af8ee"
+      ],
+      "reason": "Detection pattern literal or documented example in the scanner repository; reviewed as non-executable source content.",
+      "created_at": "2026-08-27T07:08:58Z"
+    },
+    {
+      "rule_id": "AGT-MCP-011",
+      "file_path": "internal/ingest/generators.go",
+      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e",
+      "finding_keys": [
+        "AGT-MCP-011|internal/ingest/generators.go|bc73f080bd0631a2"
+      ],
+      "reason": "Detection pattern literal or documented example in the scanner repository; reviewed as non-executable source content.",
+      "created_at": "2026-08-27T07:08:58Z"
+    },
+    {
+      "rule_id": "AGT-SKL-001",
+      "file_path": "internal/ingest/generators.go",
+      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e",
+      "finding_keys": [
+        "AGT-SKL-001|internal/ingest/generators.go|bc73f080bd0631a2"
+      ],
+      "reason": "Detection pattern literal or documented example in the scanner repository; reviewed as non-executable source content.",
+      "created_at": "2026-08-27T07:08:59Z"
+    },
+    {
+      "rule_id": "AGT-SKL-002",
+      "file_path": "internal/ingest/generators.go",
+      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e",
+      "finding_keys": [
+        "AGT-SKL-002|internal/ingest/generators.go|bc73f080bd0631a2"
+      ],
+      "reason": "Detection pattern literal or documented example in the scanner repository; reviewed as non-executable source content.",
+      "created_at": "2026-08-27T07:08:59Z"
+    },
+    {
+      "rule_id": "ATK-EXE-001",
+      "file_path": "internal/ingest/generators.go",
+      "file_sha256": "b34f618746529429c3d5d6b593150418eaaaa36e3848c2153999ca7f74fd0e2e",
+      "finding_keys": [
+        "ATK-EXE-001|internal/ingest/generators.go|bc73f080bd0631a2",
+        "ATK-EXE-001|internal/ingest/generators.go|eb622150597f2cc1"
+      ],
+      "reason": "Detection pattern literal or documented example in the scanner repository; reviewed as non-executable source content.",
+      "created_at": "2026-08-27T07:09:00Z"
+    },
+    {
+      "rule_id": "ATK-EXE-001",
+      "file_path": "internal/scan/decoders.go",
+      "file_sha256": "5ec9ebc8ad7a4dc356eb37a9d1d9c33f369e62e0f1a386e21d6e0f37cb6b18d9",
+      "finding_keys": [
+        "ATK-EXE-001|internal/scan/decoders.go|fbb599987bcd8d67",
+        "ATK-EXE-001|internal/scan/decoders.go|37f8cdc212e7fe13"
+      ],
+      "reason": "Detection pattern literal or documented example in the scanner repository; reviewed as non-executable source content.",
+      "created_at": "2026-08-27T07:09:00Z"
+    },
+    {
+      "rule_id": "MID-002",
+      "file_path": "internal/security/security.go",
+      "file_sha256": "5299b898275590e94636454ebcfdecbba0f11fb2e8631320714c5f3f39ba0b5e",
+      "finding_keys": [
+        "MID-002|internal/security/security.go|1620bfc7631ef605"
+      ],
+      "reason": "Detection pattern literal or documented example in the scanner repository; reviewed as non-executable source content.",
+      "created_at": "2026-08-27T07:09:01Z"
     }
   ]
 }

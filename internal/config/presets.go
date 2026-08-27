@@ -245,6 +245,7 @@ func ApplyRunConfigValues(raw *RunRawOptions, values map[string]string, visited 
 	}
 	setString("out", &raw.OutPath)
 	setString("format", &raw.OutputFormatRaw, "output", "output-format")
+	setString("sarif-base-path", &raw.SARIFBasePath)
 	setString("rule-quality", &raw.RuleQualityRaw)
 	setString("fail-on", &raw.FailOnRaw)
 	if err := setInt64("max-bytes", &raw.MaxBytes); err != nil {

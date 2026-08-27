@@ -14,14 +14,14 @@ This document describes the current `internal/rules` layout after refactoring to
 
 | File | Purpose | Rule Count |
 |---|---|---:|
-| `rules_behavioral_signals.go` | Behavioral payload signals (encoding, obfuscation, CI abuse, container escape, workflow trust, CI build hygiene, CI env exposure, shell eval, infra policy, supply chain tooling) | 82 |
+| `rules_behavioral_signals.go` | Behavioral payload signals (encoding, obfuscation, CI abuse, container escape, workflow trust, CI build hygiene, CI env exposure, shell eval, infra policy, supply chain tooling) | 80 |
 | `rules_agentic_surfaces.go` | Agent/LLM ecosystem poisoning, MCP abuse, memory poisoning, tool-output injection, trust-laundering, MCP credential interpolation, agent skill permissions | 67 |
 | `rules_non_code_surfaces.go` | Git metadata, package-manager config poisoning, IDE/devcontainer execution surfaces, dependency bot config, container registry trust | 26 |
 | `rules_identity_exposure.go` | Machine-identity policy risk (OIDC, IAM, service account) and infra credential exposure | 7 |
 | `rules_attack_tactics.go` | ATT&CK tactic-aligned broad detections and structural credential/C2 patterns | 48 |
 | `rules_core.go` | Deterministic composition and regex/literal-hint compilation | n/a |
 
-Total built-in rules: **229** (see `TestDefaultRulesCompositionIncludesAllGroups` in `rules_core_test.go`).
+Total built-in rules: **227** (see `TestDefaultRulesCompositionIncludesAllGroups` in `rules_core_test.go`).
 
 ## Composition Order
 
@@ -42,7 +42,7 @@ Rationale:
 
 ## Ruleset Metadata Snapshot
 
-- **Total rules:** 229 built-in (campaign IOCs are additional JSON rule packs when `rules_dir` is configured).
+- **Total rules:** 227 built-in (campaign IOCs are additional JSON rule packs when `rules_dir` is configured).
 - For authoritative per-group counts and sentinel IDs, run `go test ./internal/rules/ -v`.
 
 Severity distribution has been rebalanced to reflect skeptic's sharpened focus: CI secret hygiene (`CI-SECRET-*`) at Low, broad ATT&CK tactic heuristics (`ATK-*`) at Low where tuned for noise, and structural agentic/workflow rules at higher severities as appropriate.
@@ -59,7 +59,7 @@ Each grouped rules file has its own test:
 
 `rules_core_test.go` validates:
 
-- Overall count (229, validated by `rules_core_test.go`)
+- Overall count (227, validated by `rules_core_test.go`)
 - Presence of cross-group sentinel IDs
 - Deterministic group boundary order in `DefaultRules()`
 

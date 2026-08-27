@@ -15,7 +15,7 @@ func TestRunCorrelationNoFindings(t *testing.T) {
 
 func TestRunCorrelationCOR001(t *testing.T) {
 	findings := []model.Finding{
-		{RuleID: "POL-GHA-001", File: ".github/workflows/ci.yml", Severity: model.SeverityHigh},
+		{RuleID: "SCM-TRUST-001", File: ".github/workflows/ci.yml", Severity: model.SeverityHigh},
 		{RuleID: "BHV-CI-001", File: ".github/workflows/ci.yml", Severity: model.SeverityMedium},
 	}
 	results := RunCorrelation(findings)
@@ -139,11 +139,11 @@ func TestRunCorrelationNoMatch(t *testing.T) {
 }
 
 func TestMatchesAllPatterns(t *testing.T) {
-	ids := []string{"POL-GHA-001", "BHV-CI-002"}
-	if !MatchesAllPatterns(ids, []string{"POL-GHA-", "(BHV-CI-|CI-ABUSE-)"}) {
+	ids := []string{"SCM-TRUST-001", "BHV-CI-002"}
+	if !MatchesAllPatterns(ids, []string{"SCM-TRUST-001", "(BHV-CI-|CI-ABUSE-)"}) {
 		t.Fatal("expected match")
 	}
-	if MatchesAllPatterns(ids, []string{"POL-GHA-", "NONEXISTENT-"}) {
+	if MatchesAllPatterns(ids, []string{"SCM-TRUST-001", "NONEXISTENT-"}) {
 		t.Fatal("expected no match")
 	}
 }
@@ -168,7 +168,7 @@ func TestGroupFindingsByDir(t *testing.T) {
 
 func TestCorrelateByFileBasenameCORFILE001(t *testing.T) {
 	findings := []model.Finding{
-		{RuleID: "POL-GHA-001", File: "proj-a/.github/workflows/deploy.yml", ConfidenceClass: model.ConfidenceDefinitive},
+		{RuleID: "SCM-TRUST-001", File: "proj-a/.github/workflows/deploy.yml", ConfidenceClass: model.ConfidenceDefinitive},
 		{RuleID: "BHV-CI-002", File: "proj-b/.github/workflows/deploy.yml", ConfidenceClass: model.ConfidenceHeuristic},
 		{RuleID: "ENC-EXFIL-003", File: "proj-c/.github/workflows/deploy.yml", ConfidenceClass: model.ConfidenceDefinitive},
 		{RuleID: "AGT-SKL-004", File: "proj-d/.github/workflows/deploy.yml", ConfidenceClass: model.ConfidenceHeuristic},

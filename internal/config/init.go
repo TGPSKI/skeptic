@@ -26,6 +26,7 @@ func RunInit(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("skeptic init", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		PrintSubcommandHeader(stderr, "init", "Bootstrap skeptic configuration and its XDG data directory.", []string{"skeptic init --preset ci --out .skeptic.json"})
 		PrintFormattedFlags(fs, stderr, map[string]string{
 			"o": "out", "f": "format",
 		}, nil)

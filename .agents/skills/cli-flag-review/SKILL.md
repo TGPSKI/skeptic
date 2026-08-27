@@ -21,6 +21,8 @@ test isolation, and implementation correctness.
 3. **Short flag audit** — assign single-letter aliases per the priority table.
 4. **Shorthand precedence audit** — verify every shorthand is registered in the config-layer maps (see below).
 5. **Help formatter audit** — verify `printScanFlags` and `scanFlagShorthands` are in sync with registrations.
+   Verify every subcommand usage function calls `config.PrintSubcommandHeader`
+   with a one-line synopsis and at least one worked example.
 6. **Global vs local audit** — decide whether each flag should be global (pre-parsed in `extractGlobalFlags`) or local to its subcommand `FlagSet`.
 7. **Test isolation audit** — verify every test calling `run()` or `ResolveConfigLayers()` sets `XDG_DATA_HOME`.
 8. **Implement** — edit flag registrations, update maps, run `go fmt && go vet && go test -race ./...`.

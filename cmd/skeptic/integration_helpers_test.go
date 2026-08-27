@@ -660,6 +660,11 @@ func findingRuleIDSet(t *testing.T, report model.Report) map[string]struct{} {
 		if strings.TrimSpace(f.RuleID) != "" {
 			out[f.RuleID] = struct{}{}
 		}
+		for _, relatedID := range f.RelatedRuleIDs {
+			if strings.TrimSpace(relatedID) != "" {
+				out[relatedID] = struct{}{}
+			}
+		}
 	}
 	return out
 }

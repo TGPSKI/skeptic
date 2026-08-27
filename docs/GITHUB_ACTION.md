@@ -256,7 +256,7 @@ For supply chain safety, pin to a full commit SHA instead:
 - uses: TGPSKI/skeptic@<40-char-sha> # v0.3.0
 ```
 
-skeptic detects mutable action refs itself (`SCM-TRUST-001`, `POL-GHA-001`), so a tag reference will show up as a finding when you scan your own repository.
+skeptic detects mutable action refs itself (`SCM-TRUST-001`), so a tag reference will show up as a finding when you scan your own repository.
 
 A SHA-pinned ref builds skeptic from source, because a commit SHA does not identify a release. Pin to an exact version tag (`@v0.3.1`) to get the prebuilt binary and a SHA-verified download.
 

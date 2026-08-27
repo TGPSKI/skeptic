@@ -116,12 +116,16 @@ func WriteTextReport(out io.Writer, report model.Report) {
 		if categoryDisplay == "trust-laundering" {
 			categoryDisplay = "trust-laundering (low-review surface)"
 		}
+		ruleDisplay := finding.RuleID
+		if len(finding.RelatedRuleIDs) > 0 {
+			ruleDisplay = fmt.Sprintf("%s (+%d related)", finding.RuleID, len(finding.RelatedRuleIDs))
+		}
 		fmt.Fprintf(
 			out,
 			"[%s/%s] %s %s\n  file: %s\n  category: %s\n  mitre: %s\n  match: %s\n",
 			severityLabel,
 			confLabel,
-			finding.RuleID,
+			ruleDisplay,
 			finding.Title,
 			location,
 			categoryDisplay,

@@ -48,6 +48,7 @@ func registerRunFlags(fs *flag.FlagSet, raw *runRawOptions, stderr io.Writer) {
 	fs.StringVar(&raw.WaiversRaw, "waivers", "", "waiver JSON file path (empty = no suppression)")
 	fs.StringVar(&raw.OutputFormatRaw, "format", string(model.FormatText), "output format: text|json|sarif|markdown")
 	fs.StringVar(&raw.OutputFormatRaw, "f", string(model.FormatText), "output format: text|json|sarif|markdown")
+	fs.StringVar(&raw.SARIFBasePath, "sarif-base-path", "", "repository base path for SARIF artifact URIs (empty = detect git root)")
 	fs.StringVar(&raw.OutPath, "out", "", "write the report to a file (empty = stdout)")
 	fs.StringVar(&raw.OutPath, "o", "", "write the report to a file (empty = stdout)")
 	fs.StringVar(&raw.RuleQualityRaw, "rule-quality", string(model.RuleQualityWarn), "rule quality mode: off|warn|strict")
@@ -178,6 +179,7 @@ type resolvedRunConfig struct {
 	outputFormat   model.OutputFormat
 	outPath        string
 	roots          []string
+	sarifBasePath  string
 	loadedRules    []model.Rule
 	includeRuleIDs []string
 	excludeRuleIDs []string
@@ -265,6 +267,11 @@ func resolveRunConfig(fs *flag.FlagSet, raw *runRawOptions, stderr io.Writer, pe
 		return resolvedRunConfig{}, 2
 	}
 	out.roots = roots
+	out.sarifBasePath, err = resolveSARIFBasePath(raw.SARIFBasePath, roots)
+	if err != nil {
+		fmt.Fprintf(stderr, "invalid --sarif-base-path: %v\n", err)
+		return resolvedRunConfig{}, 2
+	}
 	rulesDir := raw.RulesDir
 	if rulesDir == "" && !raw.NoRulepacks {
 		sys, _, _ := configpkg.LoadSystemConfig("")
@@ -347,8 +354,11 @@ func postProcessReport(report *model.Report, raw *runRawOptions, cfg resolvedRun
 	enrichReportFindings(report, raw, cfg.roots, cfg.threatMode, cfg.logger)
 
 	report.Findings = filterFindingsByRulePatterns(report.Findings, cfg.includeRuleIDs, cfg.excludeRuleIDs)
+	report.Findings = scanpkg.RollupFindings(report.Findings)
 	scanpkg.SortFindings(report.Findings)
 	report.FindingsBySeverity = scanpkg.SummarizeFindings(report.Findings)
+	report.FindingsByConfidence = model.SummarizeFindingsByConfidence(report.Findings)
+	report.RiskScore = scanpkg.ComputeRiskScore(report.Findings)
 	if cfg.failOn != model.SeverityNone {
 		report.ThresholdExceeded = scanpkg.ThresholdExceeded(report.Findings, cfg.failOn, cfg.scanMode)
 	}
@@ -361,6 +371,7 @@ func postProcessReport(report *model.Report, raw *runRawOptions, cfg resolvedRun
 		}
 		fileHashes := suppress.ComputeFileHashes(report.Findings)
 		report.Findings = suppress.ApplyWaivers(report.Findings, wf.Waivers, fileHashes)
+		report.Findings = suppress.SuppressDerivedFindings(report.Findings)
 		report.FindingsBySeverity = scanpkg.SummarizeFindings(report.Findings)
 		report.RiskScore = scanpkg.ComputeRiskScore(report.Findings)
 		if cfg.failOn != model.SeverityNone {
@@ -384,6 +395,8 @@ func postProcessReport(report *model.Report, raw *runRawOptions, cfg resolvedRun
 	if !mode.SkipStdout {
 		if cfg.outputFormat == model.FormatSARIF {
 			report.ToolVersion = skepticToolVersion()
+			report.ToolInformationURI = skepticToolInformationURI()
+			report.SARIFBasePath = cfg.sarifBasePath
 		}
 		if _, code := emitReport(stdout, stderr, *report, cfg.outputFormat, cfg.outPath); code != 0 {
 			return code

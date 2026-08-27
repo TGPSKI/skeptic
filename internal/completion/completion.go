@@ -67,6 +67,10 @@ var CorpusSourceTypes = []string{"url", "file"}
 func RunCompletion(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("skeptic completion", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	fs.Usage = func() {
+		fmt.Fprintln(stderr, "Usage: skeptic completion <bash|zsh|fish>")
+		fmt.Fprintln(stderr, "\nGenerate shell completion definitions.\n\nExamples:\n  skeptic completion zsh")
+	}
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
@@ -134,7 +138,7 @@ func GenerateBashCompletion(w io.Writer) {
 	fmt.Fprintln(w, `    --input-format) COMPREPLY=($(compgen -W "$ingest_formats" -- "$cur")); return ;;`)
 	fmt.Fprintln(w, `    --sort) COMPREPLY=($(compgen -W "$corpus_sort_keys" -- "$cur")); return ;;`)
 	fmt.Fprintln(w, `    --source-type) COMPREPLY=($(compgen -W "$corpus_source_types" -- "$cur")); return ;;`)
-	fmt.Fprintln(w, `    --path|-p|--out|-o|--rules-dir|-r|--rules-file|--config|-c|--baseline|--waivers|--log-file)`)
+	fmt.Fprintln(w, `    --path|-p|--out|-o|--rules-dir|-r|--rules-file|--config|-c|--baseline|--waivers|--sarif-base-path|--log-file)`)
 	fmt.Fprintln(w, `      COMPREPLY=($(compgen -f -- "$cur")); return ;;`)
 	fmt.Fprintln(w, `  esac`)
 	fmt.Fprintln(w)
@@ -227,6 +231,7 @@ func GenerateZshCompletion(w io.Writer) {
 	fmt.Fprintln(w, `        '--rules-dir[external rule directory]:dir:_files -/' \`)
 	fmt.Fprintln(w, `        '--baseline[prior JSON report]:file:_files' \`)
 	fmt.Fprintln(w, `        '--waivers[waiver JSON file]:file:_files' \`)
+	fmt.Fprintln(w, `        '--sarif-base-path[repository base for SARIF URIs]:dir:_files -/' \`)
 	fmt.Fprintln(w, `        '--incremental[only scan changed files]' \`)
 	fmt.Fprintln(w, `        '--diff-only[emit only new findings]' \`)
 	fmt.Fprintln(w, `        '--policy-checks[enable policy checks]' \`)
@@ -411,6 +416,7 @@ func GenerateFishCompletion(w io.Writer) {
 	fmt.Fprintln(w, `complete -c skeptic -l rules-file -rF -d 'external rule JSON'`)
 	fmt.Fprintln(w, `complete -c skeptic -l baseline -rF -d 'baseline JSON report'`)
 	fmt.Fprintln(w, `complete -c skeptic -l waivers -rF -d 'waiver JSON file'`)
+	fmt.Fprintln(w, `complete -c skeptic -l sarif-base-path -rF -d 'repository base for SARIF URIs'`)
 	fmt.Fprintln(w)
 
 	// Corpus subcommands

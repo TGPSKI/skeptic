@@ -21,6 +21,10 @@ func RunConfigShow(args []string, stdout io.Writer, stderr io.Writer) int {
 	)
 	fs := flag.NewFlagSet("skeptic config show", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	fs.Usage = func() {
+		PrintSubcommandHeader(stderr, "config show", "Print the resolved system and scan configuration.", []string{"skeptic config show --json"})
+		PrintFormattedFlags(fs, stderr, nil, nil)
+	}
 	fs.BoolVar(&asJSON, "json", false, "output as JSON")
 	fs.BoolVar(&systemOnly, "system", false, "show only system config")
 	fs.BoolVar(&profileOnly, "profile", false, "show only active scan profile")

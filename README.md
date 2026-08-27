@@ -8,7 +8,7 @@ A local repo trust auditor.
 
 `skeptic` detects structural trust boundary vulnerabilities that enable cascading supply chain compromise. It targets attack-enabling *conditions*, not just attack artifacts — the class of weaknesses that CVE scanners, SAST tools, and secret scanners don't cover.
 
-**stdlib-only** Go, single binary, 229 built-in rules (plus rule pack ingestion), zero runtime dependencies, and agent isolation from malicious content.
+**stdlib-only** Go, single binary, 227 built-in rules (plus rule pack ingestion), zero runtime dependencies, and agent isolation from malicious content.
 
 ---
 
@@ -33,7 +33,13 @@ skeptic corpus                  # manage the encrypted threat artifact corpus
 
 ## What `skeptic` is
 
-`skeptic` scans filesystems for attack vectors in the gaps between existing tools:
+The project ships three connected products:
+
+- **Trust-boundary scanner** — deterministic file-at-rest detection and correlation for repositories, CI, machine identities, and agentic tooling.
+- **Threat-intelligence pipeline** — ingest, validate, sign, and distribute campaign rule packs without adding runtime dependencies.
+- **Repair-eval oracle** — vulnerable repository fixtures plus conjunction graders that verify a repair removes the defect without deleting behavior or hiding findings.
+
+The scanner covers attack vectors in the gaps between existing tools:
 
 - **CI/CD trust boundary violations** — Mutable action refs, unsafe `pull_request_target` patterns, over-permissioned automation identities, unpinned installs, and CI secret hygiene gaps.
 - **Agentic ecosystem poisoning** — Malicious `SKILL.md` directives, MCP tool shadowing, memory persistence injection, and tool-output instruction injection.
@@ -48,6 +54,10 @@ skeptic corpus                  # manage the encrypted threat artifact corpus
 - **Not an EDR.** Scans files at rest, not runtime behavior.
 
 Run `skeptic` alongside these tools to detect the gaps they don't cover.
+
+For CI workflows, the closest adjacent tools have different jobs: **zizmor** audits GitHub Actions security, **actionlint** checks workflow syntax and expressions, **Poutine** scans CI pipeline misconfigurations across platforms, and **OpenSSF Scorecard** assesses broader project supply-chain practices. skeptic focuses on structural trust-boundary conditions and agentic/machine-identity surfaces, and complements rather than replaces them.
+
+See the [documentation index](docs/README.md) for user, operator, contributor, and agent guides.
 
 ## Design principles
 
@@ -419,5 +429,4 @@ Full flag list: `skeptic --help` or see [docs/CONFIGURATION.md](docs/CONFIGURATI
 | `verify-bundle`     | Verify signed distribution bundle             |
 | `completion`        | Shell completions (bash, zsh, fish)           |
 | `version`           | Print build info and rule count               |
-
 

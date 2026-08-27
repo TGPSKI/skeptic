@@ -119,6 +119,7 @@ func parseIngestFlags(args []string, stderr io.Writer) (ingestConfig, error) {
 	fs := flag.NewFlagSet("skeptic ingest", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		config.PrintSubcommandHeader(stderr, "ingest", "Generate a rule pack from threat-intelligence sources.", []string{"skeptic ingest --source report.json --name campaign --out rules.json"})
 		config.PrintFormattedFlags(fs, stderr, map[string]string{
 			"o": "out", "n": "name", "e": "ecosystems", "f": "input-format",
 		}, nil)

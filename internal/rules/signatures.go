@@ -98,6 +98,10 @@ func RunSignRulepack(args []string, stdout io.Writer, stderr io.Writer) int {
 
 	fs := flag.NewFlagSet("skeptic sign-rulepack", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	fs.Usage = func() {
+		fmt.Fprintln(stderr, "Usage: skeptic sign-rulepack [flags]\n\nSign a rule pack with an Ed25519 private key.\n\nExamples:\n  skeptic sign-rulepack --rules-file rules.json --private-key signing.pem\n\nFlags:")
+		fs.PrintDefaults()
+	}
 	fs.StringVar(&rulesFile, "rules-file", "", "rulepack JSON to sign")
 	fs.StringVar(&privateKey, "private-key", "", "Ed25519 private key PEM (PKCS8)")
 	fs.StringVar(&signatureOut, "signature-out", "", "detached signature output (default: <rules-file>.sig)")
@@ -160,6 +164,10 @@ func RunGenRulepackKeypair(args []string, stdout io.Writer, stderr io.Writer) in
 	)
 	fs := flag.NewFlagSet("skeptic gen-rule-keypair", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	fs.Usage = func() {
+		fmt.Fprintln(stderr, "Usage: skeptic gen-rule-keypair [flags]\n\nGenerate an Ed25519 rule-pack signing keypair.\n\nExamples:\n  skeptic gen-rule-keypair --private-out signing.pem --public-out signing.pub\n\nFlags:")
+		fs.PrintDefaults()
+	}
 	fs.StringVar(&privateOut, "private-out", "rulepack-signing.key.pem", "private key output path")
 	fs.StringVar(&publicOut, "public-out", "rulepack-signing.pub.pem", "public key output path")
 	if err := fs.Parse(args); err != nil {
@@ -377,6 +385,10 @@ func RunVerifyRulepack(args []string, stdout io.Writer, stderr io.Writer) int {
 	)
 	fs := flag.NewFlagSet("skeptic verify-rulepack", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	fs.Usage = func() {
+		fmt.Fprintln(stderr, "Usage: skeptic verify-rulepack [flags]\n\nVerify a rule pack's detached Ed25519 signature.\n\nExamples:\n  skeptic verify-rulepack --rules-file rules.json --public-key signing.pub\n\nFlags:")
+		fs.PrintDefaults()
+	}
 	fs.StringVar(&rulesFile, "rules-file", "", "rulepack JSON to verify")
 	fs.StringVar(&publicKey, "public-key", "", "Ed25519 public key PEM")
 	if err := fs.Parse(args); err != nil {

@@ -29,7 +29,6 @@ jobs:
 		true,
 	)
 	want := map[string]struct{}{
-		"POL-GHA-001": {},
 		"POL-GHA-002": {},
 		"POL-GHA-003": {},
 		"POL-GHA-004": {},
@@ -40,6 +39,54 @@ jobs:
 	if len(want) != 0 {
 		t.Fatalf("missing expected workflow policy findings: %#v", want)
 	}
+}
+
+func TestRunPolicyChecksPrivilegedPRCombination(t *testing.T) {
+	unsafe := `on:
+  pull_request_target:
+permissions:
+  contents: write
+jobs:
+  test:
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}`
+	findings := RunPolicyChecks("/repo/.github/workflows/pr.yml", ".github/workflows/pr.yml", strings.Split(unsafe, "\n"), unsafe, true)
+	assertHasFinding(t, findings, "CI-PRT-001")
+	assertHasFinding(t, findings, "CI-PRT-002")
+
+	safe := `on:
+  pull_request_target:
+permissions:
+  pull-requests: write
+jobs:
+  label:
+    steps:
+      - uses: actions/checkout@v4`
+	findings = RunPolicyChecks("/repo/.github/workflows/label.yml", ".github/workflows/label.yml", strings.Split(safe, "\n"), safe, true)
+	assertNoRulePrefix(t, findings, "CI-PRT-")
+
+	unprivileged := `on: pull_request
+jobs:
+  test:
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}`
+	findings = RunPolicyChecks("/repo/.github/workflows/test.yml", ".github/workflows/test.yml", strings.Split(unprivileged, "\n"), unprivileged, true)
+	assertNoRulePrefix(t, findings, "CI-PRT-")
+}
+
+func TestRunPolicyChecksIgnoresArtifactSubjectPathGlob(t *testing.T) {
+	content := `permissions:
+  id-token: write
+steps:
+  - uses: actions/attest-build-provenance@v2
+    with:
+      subject-path: 'dist/*.tar.gz'`
+	findings := RunPolicyChecks("/repo/.github/workflows/release.yml", ".github/workflows/release.yml", strings.Split(content, "\n"), content, true)
+	assertNoRulePrefix(t, findings, "POL-CLOUDID-001")
 }
 
 func TestRunPolicyChecksDependencyIntegrity(t *testing.T) {
@@ -103,4 +150,13 @@ func assertHasFinding(t *testing.T, findings []model.Finding, ruleID string) {
 		}
 	}
 	t.Fatalf("expected finding %s not present", ruleID)
+}
+
+func assertNoRulePrefix(t *testing.T, findings []model.Finding, prefix string) {
+	t.Helper()
+	for _, finding := range findings {
+		if strings.HasPrefix(finding.RuleID, prefix) {
+			t.Fatalf("unexpected finding %s", finding.RuleID)
+		}
+	}
 }

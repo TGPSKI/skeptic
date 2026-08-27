@@ -26,7 +26,7 @@ internal/
   model/          # shared domain types: Severity, Finding, Rule, Report, ScanOptions, ConfidenceClass, ScanMode
   logging/        # structured logger with verbosity levels
   security/       # redaction, hashing, integrity helpers
-  rules/          # built-in rules (229), rulepack loading, signing, quality validation, rule-pack test runner
+  rules/          # built-in rules (227), rulepack loading, signing, quality validation, rule-pack test runner
   config/         # config file loading, presets, init, config show/use, system config, XDG profile management
   checks/         # dep_checks, domain_checks (structural domain typosquat: DOM-TYPO-*), graph (graph.go, graph_azure.go, graph_gcp.go, graph_rbac.go), policy, behavior, focus checks
   scan/           # scan engine (ScanWithOptions), payload decoders (12 schemes + XOR brute), incremental cache, pre-filter, NFKC normalization, risk scoring, entropy anomaly detection, polyglot detection
@@ -220,8 +220,9 @@ The primary scan entrypoint is `internal/scan.ScanWithOptions`, invoked from `pe
 11. Correlation engine: per-directory (COR-001–003), repo-level (COR-004, COR-005), content-hash grouping, git temporal correlation (COR-TEMPORAL-001), and optional drift detection (DRIFT-001–004, DRIFT-TREND-001)
 12. **Confidence propagation** — each finding gets `ConfidenceClass` from the rule (or `DefaultConfidenceForRuleID` / correlation emitters)
 13. **Mode filtering** — `FilterFindingsByMode` applies `ScanOptions.Mode` before the report is finalized (presentation only)
-14. Aggregate **risk score** (0–100 with diminishing returns per severity) computed in `finalizeReport`
-15. Report generation (text, JSON, SARIF, markdown) including trust summary in text/markdown, and incremental cache update
+14. Roll up co-firing findings by normalized match at the same file and line, retaining secondary IDs as `related_rule_ids`
+15. Aggregate **risk score** (0–100 with diminishing returns per severity) over the rolled-up set
+16. Report generation (text, JSON, SARIF, markdown) including trust summary in text/markdown, and incremental cache update
 
 ```mermaid
 flowchart LR

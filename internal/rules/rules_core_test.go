@@ -78,7 +78,7 @@ func TestLiteralHintQuality(t *testing.T) {
 func TestDefaultRulesCompositionIncludesAllGroups(t *testing.T) {
 	rules := DefaultRules()
 	// Update this count when adding rules. Docs use "200+" and should not be updated.
-	assertRuleCount(t, "DefaultRules", rules, 229)
+	assertRuleCount(t, "DefaultRules", rules, 227)
 	validateRuleSlice(t, "DefaultRules", rules,
 		"ENC-EXFIL-001",
 		"AGT-SKL-001",

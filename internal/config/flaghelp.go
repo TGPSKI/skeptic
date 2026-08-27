@@ -7,6 +7,21 @@ import (
 	"strings"
 )
 
+// PrintSubcommandHeader writes a consistent usage line, synopsis, and worked
+// examples before a subcommand's formatted flags.
+func PrintSubcommandHeader(out io.Writer, name, synopsis string, examples []string) {
+	fmt.Fprintf(out, "Usage: skeptic %s [flags]\n\n", name)
+	fmt.Fprintln(out, synopsis)
+	if len(examples) == 0 {
+		return
+	}
+	fmt.Fprintln(out, "\nExamples:")
+	for _, example := range examples {
+		fmt.Fprintf(out, "  %s\n", example)
+	}
+	fmt.Fprintln(out, "\nFlags:")
+}
+
 // PrintFormattedFlags writes formatted flag help to out, merging shorthand
 // and long-form flags onto a single line.
 //
@@ -88,6 +103,7 @@ func inferStringMeta(f *flag.Flag) string {
 		n == "path" || n == "paths" || n == "sbom" || n == "baseline" ||
 		n == "write-baseline" || n == "state-cache" || n == "waivers" ||
 		n == "out" || n == "output" ||
+		n == "sarif-base-path" ||
 		strings.HasSuffix(n, "-manifest") || strings.HasSuffix(n, "-baseline") ||
 		strings.HasSuffix(n, "-history") || strings.HasSuffix(n, "-pubkey") {
 		return "PATH"

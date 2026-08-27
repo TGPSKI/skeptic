@@ -5,9 +5,9 @@ A pinned waiver lapses when its file changes. That is the point — it is what
 makes a waiver safer than an ignore rule. It also means editing a waived file
 breaks the build until someone re-pins it.
 
-Re-pinning re-accepts whatever the file now contains, so this prints the
-findings that each refreshed waiver will suppress. Read them before committing.
-Refreshing without looking turns a waiver back into an ignore rule.
+Each waiver records the stable identities it accepted. A stale pin refreshes
+mechanically when that set is unchanged; a new or modified finding stops the
+refresh and prints the review delta.
 
 Usage:
   scripts/refresh-waivers.py           refresh stale pins and report
@@ -50,58 +50,94 @@ def findings_for(pairs):
 
     by_pair = {}
     for f in report.get("findings", []):
-        key = (f.get("file"), f.get("rule_id"))
-        if key in pairs:
-            by_pair.setdefault(key, []).append(f)
+        rule_ids = [f.get("rule_id")] + list(f.get("related_rule_ids", []))
+        for rule_id in rule_ids:
+            key = (f.get("file"), rule_id)
+            if key in pairs:
+                copy = dict(f)
+                copy["rule_id"] = rule_id
+                by_pair.setdefault(key, []).append(copy)
     return by_pair
+
+
+def finding_key(finding):
+    match_hash = hashlib.sha256((finding.get("match") or "").encode()).hexdigest()[:16]
+    return f"{finding.get('rule_id')}|{finding.get('file')}|{match_hash}"
 
 
 def main():
     check_only = "--check" in sys.argv
     doc = json.load(open(WAIVERS))
 
-    stale = []
+    candidates = []
     for w in doc["waivers"]:
         pin = w.get("file_sha256")
         path = w["file_path"]
         if not pin or not os.path.isfile(path):
             continue
         current = sha256(path)
-        if current != pin:
-            stale.append((w, current))
+        if current != pin or not w.get("finding_keys"):
+            candidates.append((w, current))
 
-    if not stale:
-        print("all waiver pins current")
+    if not candidates:
+        print("all waiver pins and finding identities current")
         return 0
 
     if check_only:
-        print(f"{len(stale)} stale waiver pin(s):", file=sys.stderr)
-        for w, _ in stale:
-            print(f"  {w['file_path']} ({w['rule_id']})", file=sys.stderr)
+        print(f"{len(candidates)} waiver(s) need refresh or identity migration:", file=sys.stderr)
+        for w, current in candidates:
+            state = "stale pin" if current != w.get("file_sha256") else "missing finding identities"
+            print(f"  {w['file_path']} ({w['rule_id']}): {state}", file=sys.stderr)
         print("run: make waivers-refresh", file=sys.stderr)
         return 1
 
-    pairs = {(w["file_path"], w["rule_id"]) for w, _ in stale}
+    pairs = {(w["file_path"], w["rule_id"]) for w, _ in candidates}
     current_findings = findings_for(pairs)
 
-    print(f"{len(stale)} stale pin(s). These findings will be re-suppressed:\n")
-    for w, current in stale:
+    blocked = []
+    migrations = []
+    for w, current in candidates:
         key = (w["file_path"], w["rule_id"])
         hits = current_findings.get(key, [])
-        print(f"  {w['file_path']}  {w['rule_id']}  ({len(hits)} finding(s))")
-        for f in hits[:5]:
-            line = f.get("line")
-            match = (f.get("match") or "").strip().replace("\n", " ")[:100]
-            print(f"      :{line}  {match}")
-        if len(hits) > 5:
-            print(f"      … {len(hits) - 5} more")
+        current_keys = sorted({finding_key(f) for f in hits})
+        accepted_keys = set(w.get("finding_keys", []))
+        if accepted_keys:
+            new_keys = set(current_keys) - accepted_keys
+            if new_keys:
+                blocked.append((w, [f for f in hits if finding_key(f) in new_keys]))
+                continue
+        else:
+            migrations.append((w, hits))
         w["file_sha256"] = current
-        print()
+        w["finding_keys"] = current_keys
+
+    if blocked:
+        print("refresh stopped: new findings require review", file=sys.stderr)
+        for w, hits in blocked:
+            print(f"  {w['file_path']}  {w['rule_id']}  ({len(hits)} new finding(s))", file=sys.stderr)
+            for f in hits[:5]:
+                line = f.get("line")
+                match = (f.get("match") or "").strip().replace("\n", " ")[:100]
+                print(f"      :{line}  {match}", file=sys.stderr)
+        return 1
+
+    if migrations:
+        print("Recording finding identities for legacy waivers. Review this one-time migration:\n")
+        for w, hits in migrations:
+            print(f"  {w['file_path']}  {w['rule_id']}  ({len(hits)} finding(s))")
+            for f in hits[:5]:
+                line = f.get("line")
+                match = (f.get("match") or "").strip().replace("\n", " ")[:100]
+                print(f"      :{line}  {match}")
+            print()
 
     json.dump(doc, open(WAIVERS, "w"), indent=2)
     open(WAIVERS, "a").write("\n")
-    print(f"updated {len(stale)} pin(s) in {WAIVERS}")
-    print("Review the findings above before committing.")
+    print(f"updated {len(candidates)} waiver(s) in {WAIVERS}")
+    if migrations:
+        print("Review the legacy-waiver findings above before committing.")
+    else:
+        print("Finding sets unchanged; pins refreshed mechanically.")
     return 0
 
 

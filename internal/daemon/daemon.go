@@ -159,6 +159,7 @@ func ParseServeFlags(serveArgs []string, stderr io.Writer) (DaemonConfig, error)
 	fs := flag.NewFlagSet("skeptic serve", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		config.PrintSubcommandHeader(stderr, "serve", "Run the authenticated local scan daemon and scheduler.", []string{"skeptic serve --path . --scan-interval 5m"})
 		config.PrintFormattedFlags(fs, stderr, map[string]string{
 			"n": "dry-run",
 			"p": "path",

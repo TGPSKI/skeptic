@@ -128,6 +128,7 @@ For users customizing scan scope or rule behavior.
 | `--exclude-rules` | _(none)_ | Comma-separated rule IDs or prefix globs to exclude |
 | `--ignore-paths` | _(none)_ | Comma-separated glob patterns to skip |
 | `--waivers` | _(none)_ | Path to JSON waiver file (`.skeptic-waivers.json`) |
+| `--sarif-base-path` | detected git root | Repository base used for SARIF artifact URIs; falls back to CWD |
 | `--max-findings` | `20000` | Cap total findings retained in report |
 | `--max-findings-per-file` | `2000` | Cap findings retained per file |
 | `--redact-secrets` | `true` | Redact likely secrets in finding snippets |
@@ -255,7 +256,7 @@ The waiver file is a JSON object with:
 | `version` | Integer schema version; must be ≥ 1 |
 | `waivers` | Array of waiver objects |
 
-Each element of `waivers` may include `rule_id`, `file_path`, `file_sha256`, `reason`, `expires_at`, `author`, and `created_at` (JSON keys as written; timestamps use RFC3339 when present):
+Each element of `waivers` may include `rule_id`, `file_path`, `file_sha256`, `finding_keys`, `reason`, `expires_at`, `author`, and `created_at` (JSON keys as written; timestamps use RFC3339 when present). `finding_keys` records the accepted finding identities used by `make waivers-refresh` to stop on new or modified findings:
 
 | Field | Description |
 |-------|-------------|

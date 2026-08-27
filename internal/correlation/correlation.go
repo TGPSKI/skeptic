@@ -30,7 +30,7 @@ var DefaultCorrelationSpecs = []CorrelationSpec{
 		Description: "Unpinned GitHub Actions combined with CI exfiltration patterns suggest a supply chain compromise vector.",
 		Severity:    model.SeverityCritical,
 		RequiredFindingPatterns: []string{
-			"POL-GHA-",
+			"SCM-TRUST-001",
 			"(BHV-CI-|CI-ABUSE-|ENC-EXFIL-)",
 		},
 	},

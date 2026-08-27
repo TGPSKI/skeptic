@@ -8,7 +8,9 @@
 
 This is not an importable library — the "API" is the CLI itself.
 
-**`waive`:** Create SHA256-pinned waivers for findings. Flags: `--path`, `--file`, `--rule`, `--reason`, `--out`, `--config`. At least one of `--file` or `--rule` is required; `--reason` is always required.
+**`scan`:** `--sarif-base-path` controls the repository base for SARIF artifact URIs; it defaults to the detected git root and falls back to CWD.
+
+**`waive`:** Create SHA256-pinned waivers with accepted finding identities. Flags: `--path`, `--file`, `--rule`, `--reason`, `--out`, `--config`. At least one of `--file` or `--rule` is required; `--reason` is always required.
 
 ## Source Files
 

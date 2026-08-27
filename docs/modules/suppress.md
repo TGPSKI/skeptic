@@ -1,6 +1,6 @@
 # suppress
 
-> Waiver-based finding suppression with JSON waiver files, optional SHA256 content pinning, expiration support, and interactive waive generation.
+> Waiver-based finding suppression with SHA256 content pinning, accepted finding identities, expiration support, and interactive generation.
 
 ## Responsibility
 
@@ -20,7 +20,7 @@
 
 | Type | Description |
 |------|-------------|
-| `Waiver` | One suppression entry: `RuleID`, `FilePath`, optional `FileSHA256` (hex; mismatch or missing map entry prevents match), `Reason`, `ExpiresAt` (RFC3339), `Author`, `CreatedAt`. |
+| `Waiver` | One suppression entry: `RuleID`, `FilePath`, optional `FileSHA256`, accepted `FindingKeys`, `Reason`, `ExpiresAt`, `Author`, and `CreatedAt`. |
 | `WaiverFile` | Top-level JSON: `Version` (must be ≥ 1) and `Waivers` list. |
 | `ScanFunc` | `func(repoPath string) (*model.Report, error)` — scan callback so this package does not import the scan engine. |
 | `WaiveOptions` | `RepoPath`, `File` (relative path; empty = all files), `RuleID` (empty = all rules on matched files), `Reason`, `WaiverPath` (default `.skeptic-waivers.json` when empty). |
@@ -38,6 +38,7 @@
 - **Matching:** `IsWaived` walks waivers in order; inactive (expired) or empty-reason entries are skipped, then rule ID and file path patterns are applied. If `FileSHA256` is non-empty, the waiver matches only when `fileHashes` contains the finding’s path and the digest equals the waiver (case-insensitive).
 - **Hashes for apply:** Callers typically pass `ComputeFileHashes(findings)` (or a precomputed map) into `ApplyWaivers` / `IsWaived`. Omitted or empty `FileSHA256` on a waiver preserves backward compatibility (path/rule matching only).
 - **Waive flow:** `RunWaive` invokes `scanFn`, filters by file and/or rule, deduplicates by `(rule_id, file)`, sets `FileSHA256` per real file path via `SHA256FileHex`, merges into the target JSON (upsert by rule + path), then reloads and runs `ApplyWaivers` with `ComputeFileHashes(report.Findings)` to fill `ActiveAfter` / `SuppressedAfter`.
+- **Refresh review:** `make waivers-refresh` compares current stable finding identities with `FindingKeys`. Unchanged sets re-pin mechanically; new or modified findings stop refresh.
 
 ## Test Surface
 
