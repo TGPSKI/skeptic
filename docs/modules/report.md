@@ -13,7 +13,7 @@
 | Symbol | Signature | Description |
 |--------|-----------|-------------|
 | `WriteTextReport` | `(out io.Writer, report model.Report)` | Human-readable report with trust summary header (confidence counts, mode, files scanned, risk score) and per-finding `[SEVERITY/CONFIDENCE]` annotations. |
-| `WriteSARIFReport` | `(out io.Writer, report model.Report) error` | SARIF 2.1.0 with rules, results, run timing, and `confidence_class` in both rule properties and result properties. |
+| `WriteSARIFReport` | `(out io.Writer, report model.Report) error` | SARIF 2.1.0 with repository-relative artifacts, `originalUriBaseIds`, related rule IDs, rules, results, and run timing. |
 | `WriteJSONReport` | `(path string, report model.Report) error` | JSON report file with parent directory creation. |
 | `BuildSARIFRun` | `(report model.Report) map[string]any` | SARIF run payload builder. |
 | `SARIFLevelFromSeverity` | `(sev model.Severity) string` | Severity-to-SARIF-level mapping. |

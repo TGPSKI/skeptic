@@ -321,3 +321,32 @@ func TestApplyWaivers(t *testing.T) {
 		t.Fatalf("finding 3 should not be suppressed: %+v", got[3])
 	}
 }
+
+func TestApplyWaiversRequiresAllRolledRules(t *testing.T) {
+	finding := model.Finding{RuleID: "A-001", RelatedRuleIDs: []string{"B-001"}, File: "x.go"}
+	got := ApplyWaivers([]model.Finding{finding}, []Waiver{{RuleID: "A-001", Reason: "only primary"}}, nil)
+	if got[0].Suppressed {
+		t.Fatal("rolled finding was suppressed without waiving its related rule")
+	}
+	got = ApplyWaivers([]model.Finding{finding}, []Waiver{{RuleID: "A-001", Reason: "primary"}, {RuleID: "B-001", Reason: "related"}}, nil)
+	if !got[0].Suppressed {
+		t.Fatal("rolled finding was not suppressed after all constituent rules were waived")
+	}
+}
+
+func TestSuppressDerivedFindings(t *testing.T) {
+	findings := []model.Finding{
+		{RuleID: "SCM-TRUST-001", File: ".github/workflows/a.yml", Suppressed: true},
+		{RuleID: "CI-ABUSE-001", File: ".github/workflows/a.yml", Suppressed: true},
+		{RuleID: "COR-001", File: ".github/workflows", References: []string{"SCM-TRUST-001", "CI-ABUSE-001"}},
+	}
+	got := SuppressDerivedFindings(findings)
+	if !got[2].Suppressed {
+		t.Fatal("correlation with all constituents waived remained live")
+	}
+	findings[1].Suppressed = false
+	got = SuppressDerivedFindings(findings)
+	if got[2].Suppressed {
+		t.Fatal("correlation with a live constituent was suppressed")
+	}
+}

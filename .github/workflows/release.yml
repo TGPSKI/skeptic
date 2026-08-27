@@ -97,10 +97,20 @@ jobs:
           DEADLINE=$((SECONDS + 900))
 
           while :; do
-            # `.[0] // {}` keeps jq from erroring when no run exists yet.
-            RUN=$(gh run list --commit "$HEAD_SHA" --workflow ci.yml --limit 1 \
+            # Label events can create newer skipped runs for the same commit.
+            # Prefer any successful run, otherwise wait while one is active.
+            RUN=$(gh run list --commit "$HEAD_SHA" --workflow ci.yml --limit 20 \
               --json status,conclusion \
-              --jq '.[0] // {} | "\(.status // "missing") \(.conclusion // "")"')
+              --jq '
+                if any(.[]; .status == "completed" and .conclusion == "success") then
+                  "completed success"
+                elif any(.[]; .status != "completed") then
+                  "in_progress "
+                elif length == 0 then
+                  "missing "
+                else
+                  "completed \(.[0].conclusion // "unknown")"
+                end')
             STATUS="${RUN%% *}"
             CONCLUSION="${RUN#* }"
 

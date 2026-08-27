@@ -60,6 +60,9 @@ func TestRunWaive_PerFile(t *testing.T) {
 		if w.FileSHA256 == "" {
 			t.Fatalf("waiver %s missing SHA256", w.RuleID)
 		}
+		if len(w.FindingKeys) != 1 {
+			t.Fatalf("waiver %s missing finding identity", w.RuleID)
+		}
 	}
 }
 

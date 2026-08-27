@@ -34,6 +34,7 @@ func runWaive(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("skeptic waive", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "waive", "Create SHA256-pinned waivers for reviewed findings.", []string{"skeptic waive --path . --file README.md --rule SCM-TRUST-001 --reason 'documentation example'"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path", "r": "rule", "o": "out", "c": "config",
 		}, nil)

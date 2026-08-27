@@ -136,6 +136,7 @@ func finalizeReport(
 	correlated := correlation.RunCorrelation(report.Findings)
 	report.Findings = append(report.Findings, correlated...)
 	report.Findings = DedupeFindings(report.Findings)
+	report.Findings = RollupFindings(report.Findings)
 	report.Findings = FilterFindingsByThreatMode(report.Findings, opts.ThreatMode)
 	report.Findings = model.FilterFindingsByMode(report.Findings, opts.Mode)
 	SortFindings(report.Findings)

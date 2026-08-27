@@ -31,6 +31,7 @@ type RunRawOptions struct {
 	RequireSignedRules              bool
 	NoDefaultRules                  bool
 	OutputFormatRaw                 string
+	SARIFBasePath                   string
 	OutPath                         string
 	RuleQualityRaw                  string
 	FailOnRaw                       string

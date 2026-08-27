@@ -3,6 +3,8 @@ package report
 import (
 	"encoding/json"
 	"io"
+	"net/url"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -71,11 +73,16 @@ func BuildSARIFRun(report model.Report) map[string]any {
 			rulesByID[finding.RuleID] = ruleDesc
 		}
 
+		artifactLocation := map[string]any{"uri": finding.File}
+		if uri, based := sarifArtifactURI(report, finding.File); uri != "" {
+			artifactLocation["uri"] = uri
+			if based {
+				artifactLocation["uriBaseId"] = "%SRCROOT%"
+			}
+		}
 		location := map[string]any{
 			"physicalLocation": map[string]any{
-				"artifactLocation": map[string]any{
-					"uri": finding.File,
-				},
+				"artifactLocation": artifactLocation,
 			},
 		}
 		if finding.Line > 0 {
@@ -84,6 +91,13 @@ func BuildSARIFRun(report model.Report) map[string]any {
 			}
 		}
 
+		resultProperties := map[string]any{
+			"match":            finding.Match,
+			"severity":         strings.ToLower(string(finding.Severity)),
+			"category":         finding.Category,
+			"mitre":            finding.Mitre,
+			"confidence_class": confClass,
+		}
 		result := map[string]any{
 			"ruleId": finding.RuleID,
 			"level":  SARIFLevelFromSeverity(finding.Severity),
@@ -94,13 +108,10 @@ func BuildSARIFRun(report model.Report) map[string]any {
 			"partialFingerprints": map[string]any{
 				"skepticFindingKey": FindingIdentityKey(finding),
 			},
-			"properties": map[string]any{
-				"match":            finding.Match,
-				"severity":         strings.ToLower(string(finding.Severity)),
-				"category":         finding.Category,
-				"mitre":            finding.Mitre,
-				"confidence_class": confClass,
-			},
+			"properties": resultProperties,
+		}
+		if len(finding.RelatedRuleIDs) > 0 {
+			resultProperties["related_rule_ids"] = finding.RelatedRuleIDs
 		}
 		if finding.BaselineState != "" {
 			result["baselineState"] = finding.BaselineState
@@ -132,14 +143,17 @@ func BuildSARIFRun(report model.Report) map[string]any {
 		invocation["endTimeUtc"] = s
 	}
 
-	return map[string]any{
+	driver := map[string]any{
+		"name":    "skeptic",
+		"version": toolVersion,
+		"rules":   ruleList,
+	}
+	if informationURI := strings.TrimSpace(report.ToolInformationURI); informationURI != "" {
+		driver["informationUri"] = informationURI
+	}
+	run := map[string]any{
 		"tool": map[string]any{
-			"driver": map[string]any{
-				"name":           "skeptic",
-				"version":        toolVersion,
-				"informationUri": "https://github.com/TGPSKI/skeptic",
-				"rules":          ruleList,
-			},
+			"driver": driver,
 		},
 		"invocations": []any{invocation},
 		"results":     results,
@@ -161,6 +175,43 @@ func BuildSARIFRun(report model.Report) map[string]any {
 			"thresholdExceeded": report.ThresholdExceeded,
 		},
 	}
+	if base := strings.TrimSpace(report.SARIFBasePath); base != "" {
+		run["originalUriBaseIds"] = map[string]any{
+			"%SRCROOT%": map[string]any{"uri": fileURI(base, true)},
+		}
+	}
+	return run
+}
+
+func sarifArtifactURI(report model.Report, findingFile string) (string, bool) {
+	base := strings.TrimSpace(report.SARIFBasePath)
+	if base == "" || strings.HasPrefix(findingFile, "(") {
+		return filepath.ToSlash(findingFile), false
+	}
+	absFinding := findingFile
+	if !filepath.IsAbs(absFinding) {
+		if len(report.TargetPaths) != 1 {
+			return filepath.ToSlash(findingFile), false
+		}
+		absFinding = filepath.Join(report.TargetPaths[0], findingFile)
+	}
+	rel, err := filepath.Rel(base, absFinding)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return fileURI(absFinding, false), false
+	}
+	return filepath.ToSlash(rel), true
+}
+
+func fileURI(path string, directory bool) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	uri := (&url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}).String()
+	if directory && !strings.HasSuffix(uri, "/") {
+		uri += "/"
+	}
+	return uri
 }
 
 // SARIFLevelFromSeverity maps scanner severities into SARIF result levels.

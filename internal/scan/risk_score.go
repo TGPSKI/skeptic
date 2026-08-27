@@ -18,6 +18,9 @@ var severityScoreWeight = map[model.Severity]float64{
 func ComputeRiskScore(findings []model.Finding) int {
 	counts := make(map[model.Severity]int)
 	for _, f := range findings {
+		if f.Suppressed {
+			continue
+		}
 		counts[f.Severity]++
 	}
 

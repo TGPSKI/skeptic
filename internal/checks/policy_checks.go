@@ -11,16 +11,19 @@ import (
 )
 
 var (
-	reWorkflowUses          = regexp.MustCompile(`(?i)\buses:\s*([a-z0-9_.-]+/[a-z0-9_.-]+)@([^\s#]+)`)
 	reWorkflowDockerUses    = regexp.MustCompile(`(?i)\buses:\s*docker://([^\s#]+)`)
 	reWorkflowPermissions   = regexp.MustCompile(`(?i)\bpermissions\s*:\s*(write-all|\{[^}]*\b(write|admin)\b[^}]*\})`)
 	reWorkflowIDTokenWrite  = regexp.MustCompile(`(?i)\bid-token\s*:\s*write\b`)
 	reWorkflowContentsWrite = regexp.MustCompile(`(?i)\bcontents\s*:\s*write\b`)
-	reSHA40                 = regexp.MustCompile(`^[a-f0-9]{40}$`)
+	rePRTargetTrigger       = regexp.MustCompile(`(?i)^\s*pull_request_target\s*:`)
+	rePRHeadRef             = regexp.MustCompile(`(?i)github\.event\.pull_request\.head\.(sha|ref)`)
+	reCheckoutStep          = regexp.MustCompile(`(?i)\buses:\s*actions/checkout@`)
+	reRunRepoCode           = regexp.MustCompile(`(?i)^\s*(?:-\s*)?run:\s*(\./|make\b|go\s+(test|run|build)\b|npm\s+(test|run)\b|yarn\b|pnpm\b|python\s+[^\s]+\.py\b|bash\s+[^\s]+\.sh\b|(?:curl|wget)\b)`)
+	reWritePermission       = regexp.MustCompile(`(?i)^\s*([a-z][a-z-]*)\s*:\s*write\s*$`)
 	rePipRemoteInstall      = regexp.MustCompile(`(?i)\bpip(?:3)?\s+install\b.{0,200}(https?://|git\+https?://)`)
 	rePackageRangeSpec      = regexp.MustCompile(`(?i)"[^"]+"\s*:\s*"(?:\^|~|>|<|\*|latest|next)`)
 	reDockerFrom            = regexp.MustCompile(`(?i)^\s*from\s+([a-z0-9._/\-:]+)`)
-	reScopeWildcard         = regexp.MustCompile(`(?i)\b(scope|sub|subject|subjects)\b.{0,120}(\*|repo:\*|system:serviceaccount:\*)`)
+	reTrustClaimWildcard    = regexp.MustCompile(`(?i)(token\.actions\.githubusercontent\.com:(sub|aud)|["']?(sub|aud|subject|subjects)["']?\s*[:=]).{0,200}(repo:[^\s"']*\*|system:serviceaccount:[^\s"']*\*|["']\*["'])`)
 	reOIDCFederation        = regexp.MustCompile(`(?i)(token\.actions\.githubusercontent\.com|oidc|federated|workload identity)`)
 )
 
@@ -51,22 +54,6 @@ func RunPolicyChecks(absPath string, fileLabel string, lines []string, content s
 		(strings.HasSuffix(lowerPath, ".yml") || strings.HasSuffix(lowerPath, ".yaml"))
 	if isWorkflow {
 		for i, line := range lines {
-			matches := reWorkflowUses.FindStringSubmatch(line)
-			if len(matches) == 3 {
-				ref := strings.TrimSpace(strings.ToLower(matches[2]))
-				if !reSHA40.MatchString(ref) {
-					add(
-						"POL-GHA-001",
-						"GitHub Action reference is not commit SHA pinned",
-						"Workflow action references should be pinned to immutable commit SHAs to reduce tag-poisoning and mutable-ref supply chain risk.",
-						"policy-scm-trust",
-						"T1195.002",
-						model.SeverityHigh,
-						i+1,
-						line,
-					)
-				}
-			}
 			dockerMatches := reWorkflowDockerUses.FindStringSubmatch(line)
 			if len(dockerMatches) == 2 {
 				image := strings.TrimSpace(dockerMatches[1])
@@ -96,6 +83,7 @@ func RunPolicyChecks(absPath string, fileLabel string, lines []string, content s
 				)
 			}
 		}
+		findings = append(findings, runPrivilegedPRChecks(fileLabel, lines, redactSecrets)...)
 		if reWorkflowIDTokenWrite.MatchString(content) && reWorkflowContentsWrite.MatchString(content) {
 			add(
 				"POL-GHA-004",
@@ -193,7 +181,7 @@ func RunPolicyChecks(absPath string, fileLabel string, lines []string, content s
 		}
 	}
 
-	if reOIDCFederation.MatchString(content) && reScopeWildcard.MatchString(content) {
+	if reOIDCFederation.MatchString(content) && reTrustClaimWildcard.MatchString(content) {
 		add(
 			"POL-CLOUDID-001",
 			"Federated identity trust policy appears wildcarded",
@@ -213,9 +201,63 @@ func RunPolicyChecks(absPath string, fileLabel string, lines []string, content s
 func findPolicyTrustSnippet(content string) string {
 	lines := strings.Split(content, "\n")
 	for _, line := range lines {
-		if reScopeWildcard.MatchString(line) {
+		if reTrustClaimWildcard.MatchString(line) {
 			return strings.TrimSpace(line)
 		}
 	}
 	return strings.TrimSpace(fmt.Sprintf("wildcard trust signal in content (%d bytes)", len(content)))
+}
+
+func runPrivilegedPRChecks(fileLabel string, lines []string, redactSecrets bool) []model.Finding {
+	triggerLine := 0
+	for i, line := range lines {
+		if rePRTargetTrigger.MatchString(line) {
+			triggerLine = i + 1
+			break
+		}
+	}
+	if triggerLine == 0 {
+		return nil
+	}
+
+	headLine := 0
+	hasCheckout := false
+	hasRepoExecution := false
+	hasBroadWrite := false
+	for i, line := range lines {
+		if reCheckoutStep.MatchString(line) {
+			hasCheckout = true
+		}
+		if rePRHeadRef.MatchString(line) {
+			headLine = i + 1
+		}
+		if reRunRepoCode.MatchString(line) {
+			hasRepoExecution = true
+		}
+		if match := reWritePermission.FindStringSubmatch(line); len(match) == 2 && !strings.EqualFold(match[1], "pull-requests") {
+			hasBroadWrite = true
+		}
+	}
+	hasHeadCheckout := hasCheckout && headLine > 0
+	if !hasHeadCheckout && !hasRepoExecution && !hasBroadWrite {
+		return nil
+	}
+
+	findings := []model.Finding{{
+		RuleID: "CI-PRT-001", ConfidenceClass: model.ConfidenceDefinitive,
+		Title:       "Privileged PR workflow executes or writes beyond safe labeling",
+		Description: "pull_request_target is combined with PR-head checkout, repository-code execution, or write permissions beyond pull-requests.",
+		Category:    "github-actions", Mitre: "T1195.002", Severity: model.SeverityHigh,
+		File: fileLabel, Line: triggerLine, Match: security.SanitizeMatch(strings.TrimSpace(lines[triggerLine-1]), redactSecrets),
+	}}
+	if hasHeadCheckout {
+		findings = append(findings, model.Finding{
+			RuleID: "CI-PRT-002", ConfidenceClass: model.ConfidenceDefinitive,
+			Title:       "Workflow checks out PR head in privileged context",
+			Description: "Checking out pull request head refs under pull_request_target exposes privileged workflow execution to untrusted code.",
+			Category:    "github-actions", Mitre: "T1195.002", Severity: model.SeverityHigh,
+			File: fileLabel, Line: headLine, Match: security.SanitizeMatch(strings.TrimSpace(lines[headLine-1]), redactSecrets),
+		})
+	}
+	return findings
 }

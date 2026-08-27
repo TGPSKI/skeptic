@@ -28,6 +28,9 @@ func assertFindingsContainRuleIDs(t *testing.T, findings []model.Finding, requir
 	found := make(map[string]struct{}, len(findings))
 	for _, f := range findings {
 		found[f.RuleID] = struct{}{}
+		for _, relatedID := range f.RelatedRuleIDs {
+			found[relatedID] = struct{}{}
+		}
 	}
 	for _, ruleID := range required {
 		if _, ok := found[ruleID]; !ok {
@@ -41,6 +44,11 @@ func assertHasFinding(t *testing.T, findings []model.Finding, ruleID string) {
 	for _, f := range findings {
 		if f.RuleID == ruleID {
 			return
+		}
+		for _, relatedID := range f.RelatedRuleIDs {
+			if relatedID == ruleID {
+				return
+			}
 		}
 	}
 	t.Fatalf("expected finding %s not present", ruleID)

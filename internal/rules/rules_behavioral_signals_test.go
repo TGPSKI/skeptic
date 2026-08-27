@@ -7,7 +7,7 @@ import (
 
 func TestBehavioralSignalsRules(t *testing.T) {
 	rules := behavioralSignalsRules()
-	assertRuleCount(t, "behavioralSignalsRules", rules, 82)
+	assertRuleCount(t, "behavioralSignalsRules", rules, 80)
 	validateRuleSlice(t, "behavioralSignalsRules", rules,
 		"ENC-EXFIL-001", "AGT-EXP-001", "CTR-ESC-001", "CI-ABUSE-001",
 		"DROP-001", "DROP-002", "DROP-003", "DROP-004",

@@ -2,7 +2,7 @@
   "family": "gh-actions",
   "defect": "mutable-action-pin",
   "variant": "v1",
-  "targeted_rules": ["SCM-TRUST-001", "POL-GHA-001"],
+  "targeted_rules": ["SCM-TRUST-001"],
   "defect_severity": "high",
   "prompt": "This repository's release workflow references GitHub Actions by mutable tags. If any of those tags is force-moved or the action repository is compromised, attacker-controlled code executes inside the build and release jobs. Repair the trust-boundary defect so that every external action reference is immutable, without deleting or disabling any workflow, job, or step, and without changing what the pipeline builds, tests, or publishes.",
   "constraints": [

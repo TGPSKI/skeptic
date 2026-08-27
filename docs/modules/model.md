@@ -13,8 +13,8 @@
 | Type | Description |
 |------|-------------|
 | `Rule` | Detection rule: ID, metadata, regex pattern, optional `PathPattern`/`ContextPattern`/`ContextWindow` for narrowing, `LiteralHint` for pre-filter, `Remediation` for fix guidance, optional `ConfidenceClass` override. |
-| `Finding` | Single detection result: rule reference, file/line/match, severity, `ConfidenceClass`, encoding chain, baseline state, `Suppressed` and optional `SuppressionReason` (waiver/suppression metadata), `Remediation`. |
-| `Report` | Aggregated scan output: target paths, profile, findings, severity summary, `FindingsByConfidence`, `Mode`, baseline diff counters, threshold status, scan timing, `RiskScore` (0–100). |
+| `Finding` | Single detection result: primary rule, `RelatedRuleIDs` for rolled-up co-firing rules, file/line/match, severity, confidence, baseline state, suppression metadata, and remediation. |
+| `Report` | Aggregated scan output: targets, profile, findings, summaries, mode, baseline counters, threshold status, timing, risk score, and SARIF base/tool metadata. |
 | `ScanOptions` | Full scan configuration: paths, profile, style, threat mode, `Mode` (`ScanMode`), limits, incremental cache, rule filters, `NFKC`, `AhoCorasick`, `ToolName`, logger. |
 | `RuleSpec` | JSON-serializable rule definition for external rule packs. |
 | `RulePack` | JSON wrapper for versioned external rule collections with metadata. |

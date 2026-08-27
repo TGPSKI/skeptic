@@ -43,6 +43,7 @@ func runBundle(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("skeptic bundle", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "bundle", "Package the skeptic binary and rules for distribution.", []string{"skeptic bundle --platform linux/amd64 --out skeptic.tar.gz"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"o": "out",
 		}, nil)
@@ -77,6 +78,7 @@ func runVerifyBundle(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("skeptic verify-bundle", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "verify-bundle", "Verify a distribution bundle and its Ed25519 signature.", []string{"skeptic verify-bundle --bundle skeptic.tar.gz --public-key release.pub"})
 		configpkg.PrintFormattedFlags(fs, stderr, nil, nil)
 	}
 	fs.StringVar(&bundlePath, "bundle", "", "path to .tar.gz bundle to verify")

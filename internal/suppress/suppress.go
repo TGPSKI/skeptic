@@ -15,13 +15,14 @@ import (
 
 // Waiver describes a single suppression entry in a waiver file.
 type Waiver struct {
-	RuleID     string `json:"rule_id"`
-	FilePath   string `json:"file_path,omitempty"`
-	FileSHA256 string `json:"file_sha256,omitempty"` // hex-encoded; waiver invalid if file content changes
-	Reason     string `json:"reason"`
-	ExpiresAt  string `json:"expires_at,omitempty"` // RFC3339 format, empty = never
-	Author     string `json:"author,omitempty"`
-	CreatedAt  string `json:"created_at,omitempty"` // RFC3339 format
+	RuleID      string   `json:"rule_id"`
+	FilePath    string   `json:"file_path,omitempty"`
+	FileSHA256  string   `json:"file_sha256,omitempty"`  // hex-encoded; waiver invalid if file content changes
+	FindingKeys []string `json:"finding_keys,omitempty"` // accepted stable identities used by refresh review
+	Reason      string   `json:"reason"`
+	ExpiresAt   string   `json:"expires_at,omitempty"` // RFC3339 format, empty = never
+	Author      string   `json:"author,omitempty"`
+	CreatedAt   string   `json:"created_at,omitempty"` // RFC3339 format
 }
 
 // WaiverFile is the top-level JSON document for waivers.
@@ -141,12 +142,70 @@ func ApplyWaivers(findings []model.Finding, waivers []Waiver, fileHashes map[str
 	out := make([]model.Finding, len(findings))
 	copy(out, findings)
 	for i := range out {
-		if ok, reason := IsWaived(out[i], waivers, now, fileHashes); ok {
+		ok, reason := IsWaived(out[i], waivers, now, fileHashes)
+		if ok {
+			for _, relatedID := range out[i].RelatedRuleIDs {
+				related := out[i]
+				related.RuleID = relatedID
+				if relatedOK, _ := IsWaived(related, waivers, now, fileHashes); !relatedOK {
+					ok = false
+					break
+				}
+			}
+		}
+		if ok {
 			out[i].Suppressed = true
 			out[i].SuppressionReason = reason
 		}
 	}
 	return out
+}
+
+// SuppressDerivedFindings suppresses a correlation only when every referenced
+// constituent finding in its scope is suppressed. A waived chain should not
+// remain as an unactionable aggregate, while any live constituent keeps the
+// correlation visible.
+func SuppressDerivedFindings(findings []model.Finding) []model.Finding {
+	out := make([]model.Finding, len(findings))
+	copy(out, findings)
+	for i := range out {
+		if !strings.HasPrefix(out[i].RuleID, "COR-") || len(out[i].References) == 0 {
+			continue
+		}
+		refs := make(map[string]struct{}, len(out[i].References))
+		for _, id := range out[i].References {
+			refs[id] = struct{}{}
+		}
+		matched := 0
+		allSuppressed := true
+		for j := range out {
+			if i == j || strings.HasPrefix(out[j].RuleID, "COR-") || !findingInCorrelationScope(out[j], out[i].File) {
+				continue
+			}
+			if _, ok := refs[out[j].RuleID]; !ok {
+				continue
+			}
+			matched++
+			if !out[j].Suppressed {
+				allSuppressed = false
+				break
+			}
+		}
+		if matched > 0 && allSuppressed {
+			out[i].Suppressed = true
+			out[i].SuppressionReason = "all constituent findings are waived"
+		}
+	}
+	return out
+}
+
+func findingInCorrelationScope(f model.Finding, scope string) bool {
+	if scope == "(repo)" || scope == "(correlation)" || scope == "." || scope == "" {
+		return true
+	}
+	cleanScope := strings.TrimSuffix(filepath.ToSlash(scope), "/")
+	cleanFile := filepath.ToSlash(f.File)
+	return cleanFile == cleanScope || strings.HasPrefix(cleanFile, cleanScope+"/")
 }
 
 // ComputeFileHashes returns a map of file path -> hex SHA256 for all unique

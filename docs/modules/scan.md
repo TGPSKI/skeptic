@@ -65,6 +65,7 @@
 | Symbol | Signature | Description |
 |--------|-----------|-------------|
 | `ComputeRiskScore` | `(findings []model.Finding) int` | 0–100 aggregate score with diminishing returns per severity. |
+| `RollupFindings` | `(findings []model.Finding) []model.Finding` | Groups normalized matches at the same file/line, retaining the strongest primary and secondary rule IDs. |
 
 ### Threat-Mode Filtering
 

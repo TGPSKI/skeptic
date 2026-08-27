@@ -1,6 +1,8 @@
 package suppress
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -116,7 +118,17 @@ func filterFindings(findings []model.Finding, file, ruleID string) []model.Findi
 			continue
 		}
 		if ruleID != "" && f.RuleID != ruleID {
-			continue
+			matchedRelated := false
+			for _, relatedID := range f.RelatedRuleIDs {
+				if relatedID == ruleID {
+					f.RuleID = relatedID
+					matchedRelated = true
+					break
+				}
+			}
+			if !matchedRelated {
+				continue
+			}
 		}
 		out = append(out, f)
 	}
@@ -133,31 +145,39 @@ func matchesFile(findingFile, target string) bool {
 
 func buildWaivers(findings []model.Finding, opts WaiveOptions) []Waiver {
 	type key struct{ ruleID, file string }
-	seen := make(map[key]struct{})
+	seen := make(map[key]int)
 	var waivers []Waiver
 	now := time.Now().UTC().Format(time.RFC3339)
 
 	for _, f := range findings {
 		k := key{f.RuleID, f.File}
-		if _, dup := seen[k]; dup {
+		findingKey := waiverFindingIdentityKey(f)
+		if idx, dup := seen[k]; dup {
+			waivers[idx].FindingKeys = append(waivers[idx].FindingKeys, findingKey)
 			continue
 		}
-		seen[k] = struct{}{}
 
 		w := Waiver{
-			RuleID:    f.RuleID,
-			FilePath:  f.File,
-			Reason:    opts.Reason,
-			CreatedAt: now,
+			RuleID:      f.RuleID,
+			FilePath:    f.File,
+			Reason:      opts.Reason,
+			CreatedAt:   now,
+			FindingKeys: []string{findingKey},
 		}
 		if f.File != "" && !strings.HasPrefix(f.File, "(") {
 			if h, err := security.SHA256FileHex(f.File); err == nil {
 				w.FileSHA256 = h
 			}
 		}
+		seen[k] = len(waivers)
 		waivers = append(waivers, w)
 	}
 	return waivers
+}
+
+func waiverFindingIdentityKey(f model.Finding) string {
+	h := sha256.Sum256([]byte(f.Match))
+	return fmt.Sprintf("%s|%s|%s", f.RuleID, f.File, hex.EncodeToString(h[:8]))
 }
 
 func mergeAndWrite(path string, newWaivers []Waiver) error {
@@ -180,6 +200,7 @@ func mergeAndWrite(path string, newWaivers []Waiver) error {
 		k := key{nw.RuleID, nw.FilePath}
 		if idx, ok := existing[k]; ok {
 			wf.Waivers[idx].FileSHA256 = nw.FileSHA256
+			wf.Waivers[idx].FindingKeys = nw.FindingKeys
 			wf.Waivers[idx].Reason = nw.Reason
 			wf.Waivers[idx].CreatedAt = nw.CreatedAt
 		} else {

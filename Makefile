@@ -99,8 +99,8 @@ lint:
 waivers-check:
 	@python3 scripts/refresh-waivers.py --check
 
-# Re-pins stale waivers and prints the findings each one will suppress again.
-# Read them: re-pinning without looking turns a waiver into an ignore rule.
+# Re-pins stale waivers when their accepted finding sets are unchanged.
+# New or modified findings stop refresh and require review.
 waivers-refresh:
 	@python3 scripts/refresh-waivers.py
 

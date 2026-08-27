@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 
 	"github.com/TGPSKI/skeptic/internal/model"
@@ -81,6 +82,59 @@ func skepticToolVersion() string {
 		return c
 	}
 	return c + "@" + d
+}
+
+func skepticToolInformationURI() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+	path := strings.TrimSpace(info.Main.Path)
+	path = strings.TrimSuffix(path, "/cmd/skeptic")
+	if strings.HasPrefix(path, "github.com/") {
+		return "https://" + path
+	}
+	return ""
+}
+
+func resolveSARIFBasePath(explicit string, roots []string) (string, error) {
+	if strings.TrimSpace(explicit) != "" {
+		return filepath.Abs(model.ExpandHomePath(explicit))
+	}
+	if len(roots) > 0 {
+		start := roots[0]
+		if info, err := os.Stat(start); err == nil && !info.IsDir() {
+			start = filepath.Dir(start)
+		}
+		if root := findGitRoot(start); root != "" {
+			return root, nil
+		}
+	}
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	if root := findGitRoot(cwd); root != "" {
+		return root, nil
+	}
+	return cwd, nil
+}
+
+func findGitRoot(start string) string {
+	dir, err := filepath.Abs(start)
+	if err != nil {
+		return ""
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
 }
 
 // mergeGlobalFlagsIntoArgs re-injects extracted global flags as CLI args so

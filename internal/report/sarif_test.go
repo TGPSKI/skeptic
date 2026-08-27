@@ -1,6 +1,7 @@
 package report
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/TGPSKI/skeptic/internal/model"
@@ -32,6 +33,36 @@ func TestBuildSARIFRunIncludesBaselineState(t *testing.T) {
 	result := results[0].(map[string]any)
 	if result["baselineState"] != "new" {
 		t.Fatalf("expected baselineState=new, got %#v", result["baselineState"])
+	}
+}
+
+func TestBuildSARIFRunUsesRepositoryRelativeArtifacts(t *testing.T) {
+	base := t.TempDir()
+	scanRoot := filepath.Join(base, "testdata", "proof")
+	report := model.Report{
+		TargetPaths:        []string{scanRoot},
+		SARIFBasePath:      base,
+		ToolInformationURI: "https://github.com/example/skeptic",
+		Findings:           []model.Finding{{RuleID: "R-1", Title: "rule", Severity: model.SeverityHigh, File: "nested/a.yml"}},
+	}
+	run := BuildSARIFRun(report)
+	bases := run["originalUriBaseIds"].(map[string]any)
+	if _, ok := bases["%SRCROOT%"]; !ok {
+		t.Fatal("missing %SRCROOT% original URI base")
+	}
+	result := run["results"].([]any)[0].(map[string]any)
+	location := result["locations"].([]any)[0].(map[string]any)
+	physical := location["physicalLocation"].(map[string]any)
+	artifact := physical["artifactLocation"].(map[string]any)
+	if got, want := artifact["uri"], "testdata/proof/nested/a.yml"; got != want {
+		t.Fatalf("artifact uri: got %v want %v", got, want)
+	}
+	if artifact["uriBaseId"] != "%SRCROOT%" {
+		t.Fatalf("artifact uriBaseId: got %v", artifact["uriBaseId"])
+	}
+	driver := run["tool"].(map[string]any)["driver"].(map[string]any)
+	if driver["informationUri"] != report.ToolInformationURI {
+		t.Fatalf("informationUri: got %v", driver["informationUri"])
 	}
 }
 

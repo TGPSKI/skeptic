@@ -31,6 +31,7 @@ func runExportEvidence(args []string, stdout io.Writer, stderr io.Writer) int {
 	fs := flag.NewFlagSet("skeptic export-evidence", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "export-evidence", "Package a JSON scan report as an evidence bundle.", []string{"skeptic export-evidence --report report.json --out evidence.tar.gz"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"o": "out",
 		}, nil)

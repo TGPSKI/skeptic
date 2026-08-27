@@ -18,9 +18,13 @@ import (
 )
 
 func runCorpusGlobal(args []string, stdout io.Writer, stderr io.Writer, gf globalFlags) int {
-	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: skeptic corpus <init|fetch|info|scan|purge|SHA action> [flags]\n  artifact actions: show, metadata, expected-rules")
-		return 2
+	if len(args) == 0 || args[0] == "--help" || args[0] == "-h" {
+		fmt.Fprintln(stderr, "Usage: skeptic corpus <init|fetch|info|scan|purge|SHA action> [flags]")
+		fmt.Fprintln(stderr, "\nManage encrypted threat artifacts and isolated rule validation.\n\nExamples:\n  skeptic corpus init\n  skeptic corpus scan --format json\n\nArtifact actions: show, metadata, expected-rules")
+		if len(args) == 0 {
+			return 2
+		}
+		return 0
 	}
 	sub := strings.ToLower(strings.TrimSpace(args[0]))
 	switch sub {
@@ -74,6 +78,7 @@ func runCorpusArtifactInfo(shaPrefix string, args []string, stdout io.Writer, st
 	fs := flag.NewFlagSet("skeptic corpus <SHA>", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus <SHA>", "Inspect one encrypted corpus artifact.", []string{"skeptic corpus deadbeef --sha"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 		}, nil)
@@ -110,6 +115,7 @@ func runCorpusArtifactShow(shaPrefix string, args []string, stdout io.Writer, st
 	fs := flag.NewFlagSet("skeptic corpus <SHA> show", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus <SHA> show", "Decrypt and display or scan one corpus artifact.", []string{"skeptic corpus deadbeef show --format text"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 			"r": "rules-dir",
@@ -218,6 +224,7 @@ func runCorpusArtifactMetadata(shaPrefix string, args []string, stdout io.Writer
 	fs := flag.NewFlagSet("skeptic corpus <SHA> metadata", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus <SHA> metadata", "Print metadata for one corpus artifact.", []string{"skeptic corpus deadbeef metadata"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 		}, nil)
@@ -262,6 +269,7 @@ func runCorpusArtifactExpectedRules(shaPrefix string, args []string, stdout io.W
 	fs := flag.NewFlagSet("skeptic corpus <SHA> expected-rules", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus <SHA> expected-rules", "Print expected rule IDs for one corpus artifact.", []string{"skeptic corpus deadbeef expected-rules"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 		}, nil)
@@ -328,6 +336,7 @@ func runCorpusInit(args []string, stdout io.Writer, stderr io.Writer, gf globalF
 	fs := flag.NewFlagSet("skeptic corpus init", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus init", "Initialize an encrypted threat-artifact corpus.", []string{"skeptic corpus init --path ~/.local/share/skeptic/corpus"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 		}, nil)
@@ -356,6 +365,7 @@ func runCorpusFetch(args []string, stdout io.Writer, stderr io.Writer, gf global
 	fs := flag.NewFlagSet("skeptic corpus fetch", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus fetch", "Fetch and encrypt a threat artifact into the corpus.", []string{"skeptic corpus fetch --source report.md --expected-rules AGT-SKL-001"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 			"s": "source",
@@ -449,6 +459,7 @@ func runCorpusInfo(args []string, stdout io.Writer, stderr io.Writer, gf globalF
 	fs := flag.NewFlagSet("skeptic corpus info", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus info", "List and filter encrypted corpus artifacts.", []string{"skeptic corpus info --format json --limit 20"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 			"f": "format",
@@ -580,6 +591,7 @@ func runCorpusScan(args []string, stdout io.Writer, stderr io.Writer, gf globalF
 	fs := flag.NewFlagSet("skeptic corpus scan", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus scan", "Scan the encrypted corpus against current rules.", []string{"skeptic corpus scan --format json --out corpus-results.json"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 			"f": "format",
@@ -744,6 +756,7 @@ func runCorpusPurge(args []string, stdout io.Writer, stderr io.Writer, gf global
 	fs := flag.NewFlagSet("skeptic corpus purge", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		configpkg.PrintSubcommandHeader(stderr, "corpus purge", "Delete encrypted corpus data after explicit confirmation.", []string{"skeptic corpus purge --confirm"})
 		configpkg.PrintFormattedFlags(fs, stderr, map[string]string{
 			"p": "path",
 			"y": "confirm",

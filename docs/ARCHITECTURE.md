@@ -26,7 +26,7 @@ internal/
   model/          # shared domain types: Severity, Finding, Rule, Report, ScanOptions, ConfidenceClass, ScanMode
   logging/        # structured logger with verbosity levels
   security/       # redaction, hashing, integrity helpers
-  rules/          # built-in rules (229), rulepack loading, signing, quality validation, rule-pack test runner
+  rules/          # built-in rules (227), rulepack loading, signing, quality validation, rule-pack test runner
   config/         # config file loading, presets, init, config show/use, system config, XDG profile management
   checks/         # dep_checks, domain_checks (structural domain typosquat: DOM-TYPO-*), graph (graph.go, graph_azure.go, graph_gcp.go, graph_rbac.go), policy, behavior, focus checks
   scan/           # scan engine (ScanWithOptions), payload decoders (12 schemes + XOR brute), incremental cache, pre-filter, NFKC normalization, risk scoring, entropy anomaly detection, polyglot detection
@@ -52,9 +52,9 @@ Built-in rules are split across themed files under `internal/rules/`. The packag
 
 | File | Rules | Role |
 |------|-------|------|
-| `rules_behavioral_signals.go` | 82 | Encoded payload, obfuscation, CI abuse, container escape, structural exfil/memory/sweep/stego signals (`CI-EXFIL-*`, `ATK-MEM-*`, `ATK-SWEEP-*`, `ENC-STEGO-*`, …), and related behavioral patterns |
+| `rules_behavioral_signals.go` | 80 | Encoded payload, obfuscation, CI abuse, container escape, structural exfil/memory/sweep/stego signals (`CI-EXFIL-*`, `ATK-MEM-*`, `ATK-SWEEP-*`, `ENC-STEGO-*`, …), and related behavioral patterns |
 | `rules_agentic_surfaces.go` | 67 | Agentic/LLM poisoning surfaces, MCP abuse patterns, trust-laundering (`AGT-TRUST-001`–`018`, including “nobody reviews this” surfaces), memory poisoning, tool-output injection |
-| `rules_non_code_surfaces.go` | 28 | Non-code attack surfaces: git metadata, package-manager config, IDE/devcontainer vectors, plus structural CI/SCM workflow signals (`CI-PRT-*`, `SCM-TAG-*`) |
+| `rules_non_code_surfaces.go` | 26 | Non-code attack surfaces: git metadata, package-manager config, IDE/devcontainer vectors, plus structural SCM workflow signals (`SCM-TAG-*`) |
 | `rules_identity_exposure.go` | 7 | IaC and machine-identity policy risk signals |
 | `rules_attack_tactics.go` | 45 | ATT&CK tactic coverage heuristics (`ATK-K8S-*`, `ATK-PER-*`, `ATK-IMDS-*`, `ATK-C2-*`, `ATK-WIPER-*`, …) |
 
@@ -220,8 +220,9 @@ The primary scan entrypoint is `internal/scan.ScanWithOptions`, invoked from `pe
 11. Correlation engine: per-directory (COR-001–003), repo-level (COR-004, COR-005), content-hash grouping, git temporal correlation (COR-TEMPORAL-001), and optional drift detection (DRIFT-001–004, DRIFT-TREND-001)
 12. **Confidence propagation** — each finding gets `ConfidenceClass` from the rule (or `DefaultConfidenceForRuleID` / correlation emitters)
 13. **Mode filtering** — `FilterFindingsByMode` applies `ScanOptions.Mode` before the report is finalized (presentation only)
-14. Aggregate **risk score** (0–100 with diminishing returns per severity) computed in `finalizeReport`
-15. Report generation (text, JSON, SARIF, markdown) including trust summary in text/markdown, and incremental cache update
+14. Roll up co-firing findings by normalized match at the same file and line, retaining secondary IDs as `related_rule_ids`
+15. Aggregate **risk score** (0–100 with diminishing returns per severity) over the rolled-up set
+16. Report generation (text, JSON, SARIF, markdown) including trust summary in text/markdown, and incremental cache update
 
 ```mermaid
 flowchart LR

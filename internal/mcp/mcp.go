@@ -144,6 +144,7 @@ func RunMCP(ctx context.Context, args []string, stdout io.Writer, stderr io.Writ
 	fs := flag.NewFlagSet("skeptic mcp", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() {
+		config.PrintSubcommandHeader(stderr, "mcp", "Run the local MCP JSON-RPC bridge for skeptic tools.", []string{"skeptic mcp --mcp-allowed-roots /workspace"})
 		config.PrintFormattedFlags(fs, stderr, nil, nil)
 	}
 	fs.StringVar(&daemonURL, "daemon-url", "http://127.0.0.1:7788", "skeptic daemon URL")

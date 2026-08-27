@@ -10,11 +10,12 @@ import (
 
 // RunConfigUse sets the active named profile by writing a pointer file.
 func RunConfigUse(args []string, stdout io.Writer, stderr io.Writer) int {
+	if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
+		printConfigUseHelp(stderr)
+		return 0
+	}
 	if len(args) == 0 {
-		fmt.Fprintln(stderr, "usage: skeptic config use <profile-name>")
-		fmt.Fprintln(stderr)
-		fmt.Fprintln(stderr, "Sets the active named profile. The profile must exist under:")
-		fmt.Fprintf(stderr, "  %s\n", ProfilesDir())
+		printConfigUseHelp(stderr)
 		return 2
 	}
 	name := strings.TrimSpace(args[0])
@@ -47,6 +48,12 @@ func RunConfigUse(args []string, stdout io.Writer, stderr io.Writer) int {
 	return 0
 }
 
+func printConfigUseHelp(out io.Writer) {
+	fmt.Fprintln(out, "Usage: skeptic config use <profile-name>")
+	fmt.Fprintln(out, "\nSet the active named scan profile.\n\nExamples:\n  skeptic config use ci")
+	fmt.Fprintf(out, "\nProfiles directory: %s\n", ProfilesDir())
+}
+
 // RunConfig dispatches config sub-subcommands (show, use). Bare invocation prints help.
 func RunConfig(args []string, stdout io.Writer, stderr io.Writer) int {
 	if len(args) == 0 {
@@ -55,6 +62,9 @@ func RunConfig(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 	sub := strings.ToLower(strings.TrimSpace(args[0]))
 	switch sub {
+	case "--help", "-h", "help":
+		printConfigHelp(stderr)
+		return 0
 	case "show":
 		return RunConfigShow(args[1:], stdout, stderr)
 	case "use":
@@ -67,9 +77,9 @@ func RunConfig(args []string, stdout io.Writer, stderr io.Writer) int {
 }
 
 func printConfigHelp(w io.Writer) {
-	fmt.Fprintln(w, "skeptic config - manage configuration profiles")
-	fmt.Fprintln(w)
-	fmt.Fprintln(w, "Subcommands:")
+	fmt.Fprintln(w, "Usage: skeptic config <show|use> [flags]")
+	fmt.Fprintln(w, "\nManage system configuration and named scan profiles.\n\nExamples:\n  skeptic config show --json\n  skeptic config use ci")
+	fmt.Fprintln(w, "\nSubcommands:")
 	fmt.Fprintln(w, "  show    Print resolved configuration (system + active profile)")
 	fmt.Fprintln(w, "  use     Set the active named profile")
 	fmt.Fprintln(w)

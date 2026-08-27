@@ -68,13 +68,17 @@ func WriteMarkdown(out io.Writer, report model.Report) {
 			// Rendering it identically to a live one reads as an open finding
 			// that nobody acted on.
 			title := f.Title
+			ruleDisplay := f.RuleID
+			if len(f.RelatedRuleIDs) > 0 {
+				ruleDisplay = fmt.Sprintf("%s (+%d related)", f.RuleID, len(f.RelatedRuleIDs))
+			}
 			if f.Suppressed {
 				title = "~~" + f.Title + "~~ (waived)"
 			}
 			fmt.Fprintf(out, "| %s | %s | `%s` | `%s` | %s |\n",
 				strings.ToUpper(string(f.Severity)),
 				confCol,
-				f.RuleID,
+				ruleDisplay,
 				file,
 				title,
 			)

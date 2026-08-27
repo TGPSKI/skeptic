@@ -437,6 +437,7 @@ type Finding struct {
 	Match             string          `json:"match"`
 	EncodingChain     string          `json:"encoding_chain,omitempty"`
 	References        []string        `json:"references,omitempty"`
+	RelatedRuleIDs    []string        `json:"related_rule_ids,omitempty"`
 	BaselineState     string          `json:"baseline_state,omitempty"`
 	Confidence        float64         `json:"confidence,omitempty"`
 	ConfidenceClass   ConfidenceClass `json:"confidence_class,omitempty"`
@@ -459,6 +460,8 @@ type Report struct {
 	ScanCompletedAt string `json:"scan_completed_at,omitempty"`
 	// ToolVersion is the scanner build identity string included in SARIF tool.driver.version.
 	ToolVersion          string         `json:"tool_version,omitempty"`
+	ToolInformationURI   string         `json:"tool_information_uri,omitempty"`
+	SARIFBasePath        string         `json:"sarif_base_path,omitempty"`
 	RulesetHash          string         `json:"ruleset_hash,omitempty"`
 	Incremental          bool           `json:"incremental"`
 	StateCachePath       string         `json:"state_cache_path,omitempty"`

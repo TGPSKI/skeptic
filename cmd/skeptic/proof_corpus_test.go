@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path/filepath"
 	"runtime"
@@ -53,6 +54,11 @@ func findingHasRulePrefix(findings []model.Finding, prefix string) bool {
 		if len(f.RuleID) >= len(prefix) && f.RuleID[:len(prefix)] == prefix {
 			return true
 		}
+		for _, relatedID := range f.RelatedRuleIDs {
+			if len(relatedID) >= len(prefix) && relatedID[:len(prefix)] == prefix {
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -61,6 +67,11 @@ func findingHasRuleID(findings []model.Finding, id string) bool {
 	for _, f := range findings {
 		if f.RuleID == id {
 			return true
+		}
+		for _, relatedID := range f.RelatedRuleIDs {
+			if relatedID == id {
+				return true
+			}
 		}
 	}
 	return false
@@ -126,6 +137,21 @@ func TestProofCorpusCITrustAbuse(t *testing.T) {
 	hasCIPRT := findingHasRulePrefix(report.Findings, "CI-PRT-")
 	if !hasCIMutable && !hasCIPRT {
 		t.Error("expected SCM-TRUST-/CI-MUTABLE- or CI-PRT- finding")
+	}
+}
+
+func TestProofCorpusRollupHasNoDuplicateLocatedMatches(t *testing.T) {
+	report := scanProofFixture(t, "agentic-poisoning", model.ScanModeIR)
+	seen := make(map[string]string)
+	for _, finding := range report.Findings {
+		if finding.Line == 0 {
+			continue
+		}
+		key := fmt.Sprintf("%s:%d:%s", finding.File, finding.Line, finding.Match)
+		if previous, exists := seen[key]; exists {
+			t.Fatalf("duplicate located match for %s and %s at %s", previous, finding.RuleID, key)
+		}
+		seen[key] = finding.RuleID
 	}
 }
 

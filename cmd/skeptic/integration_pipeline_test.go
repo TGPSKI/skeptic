@@ -272,8 +272,8 @@ func TestIntegrationRuleFilterIncludeExclude(t *testing.T) {
 
 	fullReport, _ := runSkepticJSONReport(t, binary, baseArgs...)
 	idsFull := findingRuleIDSet(t, fullReport)
-	if _, ok := idsFull["POL-GHA-001"]; !ok {
-		t.Fatalf("baseline: expected POL-GHA-001 in findings, got ids=%v", sortedStringSet(idsFull))
+	if _, ok := idsFull["SCM-TRUST-001"]; !ok {
+		t.Fatalf("baseline: expected SCM-TRUST-001 in findings, got ids=%v", sortedStringSet(idsFull))
 	}
 	if _, ok := idsFull["POL-CNT-001"]; !ok {
 		t.Fatalf("baseline: expected POL-CNT-001 in findings, got ids=%v", sortedStringSet(idsFull))
@@ -303,17 +303,17 @@ func TestIntegrationRuleFilterIncludeExclude(t *testing.T) {
 	}
 
 	mixed, _ := runSkepticJSONReport(t, binary, append(baseArgs,
-		"--include-rules", "POL-*", "--exclude-rules", "POL-CNT-001")...)
+		"--include-rules", "SCM-*", "--exclude-rules", "SCM-TRUST-002")...)
 	idsMixed := findingRuleIDSet(t, mixed)
-	if _, bad := idsMixed["POL-CNT-001"]; bad {
-		t.Fatalf("include POL-* exclude POL-CNT-001: did not want POL-CNT-001, got %v", sortedStringSet(idsMixed))
+	if _, bad := idsMixed["SCM-TRUST-002"]; bad {
+		t.Fatalf("include SCM-* exclude SCM-TRUST-002: got %v", sortedStringSet(idsMixed))
 	}
-	if _, ok := idsMixed["POL-GHA-001"]; !ok {
-		t.Fatalf("expected POL-GHA-001, got %v", sortedStringSet(idsMixed))
+	if _, ok := idsMixed["SCM-TRUST-001"]; !ok {
+		t.Fatalf("expected SCM-TRUST-001, got %v", sortedStringSet(idsMixed))
 	}
 	for id := range idsMixed {
-		if !strings.HasPrefix(id, "POL-") {
-			t.Fatalf("expected only POL-* ids, got %q", id)
+		if !strings.HasPrefix(id, "SCM-") {
+			t.Fatalf("expected only SCM-* ids, got %q", id)
 		}
 	}
 }
@@ -395,6 +395,10 @@ func TestIntegrationWaiverSuppression(t *testing.T) {
     {
       "rule_id": "SCM-TRUST-002",
       "reason": "integration test waiver"
+    },
+    {
+      "rule_id": "AGT-SKL-*",
+      "reason": "integration test waiver for rolled related rules"
     }
   ]
 }
@@ -416,7 +420,11 @@ func TestIntegrationWaiverSuppression(t *testing.T) {
 	report, _ := runSkepticJSONReport(t, binary, args...)
 	var saw bool
 	for _, f := range report.Findings {
-		if f.RuleID != "SCM-TRUST-002" {
+		isTarget := f.RuleID == "SCM-TRUST-002"
+		for _, relatedID := range f.RelatedRuleIDs {
+			isTarget = isTarget || relatedID == "SCM-TRUST-002"
+		}
+		if !isTarget {
 			continue
 		}
 		saw = true
